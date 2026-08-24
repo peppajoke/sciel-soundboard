@@ -59,6 +59,11 @@ log = logging.getLogger("soundboard.listener")
 RATE = 16000          # whisper's native rate; the recorder resamples for us
 SILENCE_RMS = 1e-5    # below this is indistinguishable from digital silence
 SILENT_WARN_S = 45.0
+# Estimated queue depth at which the backlog is dumped and capture resyncs.
+# Kept below the 2s fire deadline: by the time the queue holds this much,
+# everything in it is already too old to fire, so draining loses nothing
+# that was still eligible.
+MAX_BACKLOG_S = 1.5
 
 
 @dataclass
@@ -107,6 +112,8 @@ class _Capture(threading.Thread):
         self.transcribed = 0       # chunks that produced text
         self.device_label = None
         self._last_quiet_note = 0.0
+        self.decode_ms = 0.0       # EMA of whisper time per window, for status
+        self.hop_now = self.hop_s  # effective hop after adaptation
 
     def _mic(self):
         if self.device_name:
@@ -146,65 +153,66 @@ class _Capture(threading.Thread):
         self.device_label = mic.name
         log.info("[%s] listening on %s (window %.1fs, hop %.2fs)",
                  self.source, mic.name, self.chunk_s, self.hop_s)
-        hop_frames = int(RATE * self.hop_s)
         window_frames = int(RATE * self.chunk_s)
-        behind = 0
+        ema_decode = 0.0
+        # Estimated seconds of audio sitting in soundcard's queue. Integrated
+        # from (iteration time - hop) every cycle: when the loop spends longer
+        # than one hop per hop of audio read, the queue grew by the excess.
+        # The previous detector counted CONSECUTIVE instant returns and one
+        # slow-ish read reset it, so a ratcheting queue never tripped it --
+        # the log shows zero drains while bites landed 15s after the words.
+        backlog = 0.0
         # Rolling buffer: record a short hop, then transcribe the trailing
         # window. Detection latency becomes the hop rather than the window,
         # and phrases still get full context instead of being cut in half.
         buffer = np.zeros(0, dtype=np.float32)
         try:
             with mic.recorder(samplerate=RATE, channels=1) as rec:
+                prev_iter = time.time()
                 while not self.stop_flag.is_set():
-                    record_started = time.time()
+                    # ADAPTIVE HOP. The queue forms whenever decode time
+                    # exceeds the hop -- transcribing a 3s window every 0.75s
+                    # is 4x-realtime decode duty, and sustained speech on this
+                    # GPU cannot always keep that up. Reading a hop sized to
+                    # 1.25x the measured decode time keeps duty under 1 on any
+                    # hardware: latency degrades gracefully by fractions of a
+                    # second instead of a queue ratcheting to 15s.
+                    self.hop_now = min(self.chunk_s,
+                                       max(self.hop_s, ema_decode * 1.25))
+                    hop_frames = int(RATE * self.hop_now)
                     data = rec.record(numframes=hop_frames)
                     chunk = np.asarray(data, dtype=np.float32).flatten()
-                    # Backlog check. Measured by how long record() BLOCKED:
-                    # when keeping up it waits roughly a hop for new audio,
-                    # and when behind it returns instantly with queued audio.
-                    #
-                    # It is NOT measured as drift from a fixed start time --
-                    # that counted the whisper model load as lag, started
-                    # above the threshold, and could never recover, because
-                    # reading audio only advances at realtime speed. The
-                    # catch-up loop then discarded every hop forever and the
-                    # listener went permanently deaf.
                     now = time.time()
-                    blocked_for = now - record_started
-                    if blocked_for < self.hop_s * 0.4:
-                        behind += 1
-                    else:
-                        behind = 0
-                    if behind >= 4:
-                        # Sustained instant returns mean a real queue. Clearing
-                        # our buffer alone did NOT fix this: the backlog lives
-                        # in soundcard's queue, so record() kept returning
-                        # instantly, we re-detected "behind" every 4 hops, and
-                        # the lag never shrank -- transcripts arrived 8s stale
-                        # and the fire deadline rejected everything, which
-                        # presented as "speech does not show up". Draining
-                        # means READING the queued frames (fast, no transcribe)
-                        # until a read blocks like live audio again. Unlike the
-                        # old fixed-start-time approach this converges, because
-                        # the queue is finite.
+                    backlog = max(0.0, backlog + (now - prev_iter) - self.hop_now)
+                    prev_iter = now
+                    self.lag = round(backlog, 2)
+
+                    if backlog > MAX_BACKLOG_S:
+                        # Read the queue dry (reads of queued audio return
+                        # instantly; a read that blocks like live audio means
+                        # we are current again), then resynchronise.
                         drained = 0
-                        while drained < 200 and not self.stop_flag.is_set():
+                        while drained < 400 and not self.stop_flag.is_set():
                             t0 = time.time()
                             rec.record(numframes=hop_frames)
                             drained += 1
-                            if time.time() - t0 >= self.hop_s * 0.4:
-                                break        # blocked for real: caught up
+                            if time.time() - t0 >= self.hop_now * 0.5:
+                                break
+                        log.warning("[%s] %.1fs behind; drained %d hop(s)",
+                                    self.source, backlog, drained)
+                        backlog = 0.0
+                        prev_iter = time.time()
                         buffer = np.zeros(0, dtype=np.float32)
                         self.dropped += 1
-                        behind = 0
-                        log.warning("[%s] fell behind; drained %d queued hop(s)",
-                                    self.source, drained)
                         continue
-                    self.lag = round(max(0.0, self.hop_s - blocked_for), 3)
 
-                    # Stamp with when this audio was CAPTURED, so downstream can
-                    # refuse to fire on anything stale.
-                    captured_at = now
+                    # Stamp with when this audio was actually CAPTURED. The
+                    # hop just read is `backlog` seconds old when a queue has
+                    # formed; stamping read-time made stale audio look fresh,
+                    # sailed it past the 2s fire deadline, and a bite landed
+                    # 15s after the phrase. now - backlog is honest, so late
+                    # audio is dropped by the deadline instead of played.
+                    captured_at = now - backlog
                     buffer = np.concatenate([buffer, chunk])[-window_frames:]
                     audio = buffer
 
@@ -254,12 +262,26 @@ class _Capture(threading.Thread):
                         continue
 
                     try:
+                        t_dec = time.time()
+                        # Every option here bought measured decode time on
+                        # live audio (0.9-2.5s per window before, vs the 208ms
+                        # clean-clip benchmark this design was sized against):
+                        # no timestamp alignment pass, no conditioning on the
+                        # previous window, no temperature-fallback re-decodes.
                         segments, _ = self.model.transcribe(
                             audio, language="en", vad_filter=True,
                             beam_size=self.beam_size,
+                            without_timestamps=True,
+                            condition_on_previous_text=False,
+                            temperature=0.0,
                             initial_prompt=self.prompt_fn() if self.prompt_fn else None,
                         )
                         text = " ".join(s.text for s in segments).strip()
+                        took = time.time() - t_dec
+                        # EMA over ~8 windows; decays toward fast when idle so
+                        # the hop springs back after a slow patch.
+                        ema_decode = took if ema_decode == 0 else                             ema_decode * 0.85 + took * 0.15
+                        self.decode_ms = round(ema_decode * 1000)
                     except Exception as exc:
                         log.exception("[%s] transcribe failed: %s", self.source, exc)
                         continue
@@ -395,6 +417,7 @@ class Listener:
                 {"source": c.source, "healthy": c.healthy, "error": c.error,
                  "silent_for": round(time.time() - c.last_signal, 1),
                  "lag": round(c.lag, 2), "dropped": c.dropped,
+                 "decode_ms": c.decode_ms, "hop_now": round(c.hop_now, 2),
                  "peak_db": round(c.peak_db, 1), "chunks": c.chunks,
                  "transcribed": c.transcribed, "device": c.device_label}
                 for c in self.captures

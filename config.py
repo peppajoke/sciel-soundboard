@@ -30,16 +30,18 @@ DEFAULTS = {
         "device": "cuda",        # falls back to CPU automatically if CUDA is absent
         # Window handed to whisper. Kept long enough to hold a whole phrase --
         # short windows split words and wreck matching.
-        "chunk_s": 3.0,
+        "chunk_s": 2.0,
         # How often that window is re-scanned. THIS is the detection latency:
         # with a 3 s window and no hop, a phrase waits up to 3 s just for the
         # buffer to fill. Re-scanning a rolling window every 0.75 s cuts the
         # wait to about that, while keeping the full window of context.
         # Transcription costs a few ms, so the extra work is free here.
         "hop_s": 0.75,
-        # Beam search rather than greedy. Measured 208 ms/clip when combined
-        # with the trigger prompt, well inside the 750 ms hop.
-        "beam_size": 5,
+        # Greedy. Beam 5 measured fine on clean clips but 0.9-2.5s per window
+        # on live continuous speech with the GPU under load; the accuracy gap
+        # (0.87 vs 0.91 on the clip eval) is a price worth paying for decode
+        # that actually keeps up with the hop.
+        "beam_size": 1,
         # Window-peak level (dBFS) below which nothing is sent to whisper.
         # -45 sits between an analog noise floor and quiet speech; raising it
         # toward -35 trades a little sensitivity for less decode load.

@@ -67,7 +67,8 @@
       "name": "Call me asparagus!",
       "file": "asparagus-26b34c.wav",
       "triggers": [
-        "asparagus"
+        "asparagus",
+        "a spare i"
       ],
       "tags": [],
       "threshold": null,
@@ -77,8 +78,8 @@
       "random_ok": false,
       "source": "dj-khaled-3180",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787610393.1346295,
+      "plays": 5,
+      "last_played": 1787611299.464758,
       "finished": true,
       "added_at": 1787538911.38667
     },
@@ -117,8 +118,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787610847.3641236,
+      "plays": 7,
+      "last_played": 1787611264.0526993,
       "finished": true,
       "added_at": 1787538912.0169523
     },
@@ -160,8 +161,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787610807.4784522,
+      "plays": 8,
+      "last_played": 1787611367.9459777,
       "finished": true,
       "added_at": 1787538912.7291157
     },
@@ -394,8 +395,8 @@
       "random_ok": false,
       "source": "wendy-williams-7927",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787610832.5235407,
+      "plays": 8,
+      "last_played": 1787611035.4594026,
       "finished": true,
       "added_at": 1787540857.7803633
     },
@@ -415,8 +416,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787610277.0168803,
+      "plays": 4,
+      "last_played": 1787611383.6024845,
       "finished": true,
       "added_at": 1787540858.1052797
     },
@@ -425,8 +426,7 @@
       "name": "dont like him",
       "file": "dont-like-him-68ce8b.wav",
       "triggers": [
-        "bald man",
-        "bald guy"
+        "bald"
       ],
       "tags": [],
       "threshold": null,
@@ -436,8 +436,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787610840.1975172,
+      "plays": 5,
+      "last_played": 1787611403.9276423,
       "finished": true,
       "added_at": 1787540858.3997014
     },
@@ -476,8 +476,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 5,
-      "last_played": 1787610925.6312592,
+      "plays": 6,
+      "last_played": 1787611155.7996178,
       "finished": true,
       "added_at": 1787540880.1101837
     },
@@ -599,7 +599,7 @@
       "name": "not really",
       "file": "not-rellt-24fbf0.wav",
       "triggers": [
-        "does it come in other sizes",
+        "in other sizes",
         "are you ok"
       ],
       "tags": [],
@@ -620,7 +620,8 @@
       "name": "passed away",
       "file": "passed-away-3895f4.wav",
       "triggers": [
-        "she passed away"
+        "she passed away",
+        "pass away"
       ],
       "tags": [],
       "threshold": null,
@@ -630,8 +631,8 @@
       "random_ok": false,
       "source": "wendy-williams-7927",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787596513.9201806,
+      "plays": 6,
+      "last_played": 1787611119.1378534,
       "finished": true,
       "added_at": 1787540883.723038
     },
@@ -640,7 +641,8 @@
       "name": "oh great, that'll only take you a sec",
       "file": "sec-7258e2.wav",
       "triggers": [
-        "going to take forever"
+        "ill go got it",
+        "ill get them"
       ],
       "tags": [],
       "threshold": null,
@@ -650,8 +652,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787543410.4993622,
+      "plays": 3,
+      "last_played": 1787611253.7552645,
       "finished": true,
       "added_at": 1787540884.004773
     },
@@ -757,8 +759,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 7,
-      "last_played": 1787610856.7927077,
+      "plays": 8,
+      "last_played": 1787611288.8010364,
       "finished": true,
       "added_at": 1787583155.728109
     },
@@ -947,8 +949,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787609735.8683589,
+      "plays": 7,
+      "last_played": 1787611457.6892133,
       "finished": true,
       "added_at": 1787583159.5519447
     },
@@ -988,8 +990,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583483.8073814,
+      "plays": 2,
+      "last_played": 1787611184.2175612,
       "finished": true,
       "added_at": 1787583159.9985747
     },
@@ -1009,8 +1011,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787593354.7597463,
+      "plays": 4,
+      "last_played": 1787611434.5325565,
       "finished": true,
       "added_at": 1787583160.2719133
     },
@@ -1049,8 +1051,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787610203.3717537,
+      "plays": 7,
+      "last_played": 1787611416.1191077,
       "finished": true,
       "added_at": 1787583160.5265596
     },
@@ -1242,8 +1244,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787600050.2518673,
+      "plays": 3,
+      "last_played": 1787611410.0973673,
       "finished": true,
       "added_at": 1787583163.0040658
     },
@@ -1264,8 +1266,8 @@
       "random_ok": false,
       "source": "wwe-966f",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787610462.472544,
+      "plays": 5,
+      "last_played": 1787611423.1072853,
       "finished": true,
       "added_at": 1787583163.2825134
     },
@@ -1326,8 +1328,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787610492.4759119,
+      "plays": 9,
+      "last_played": 1787611431.930181,
       "finished": true,
       "added_at": 1787583173.4016266
     }

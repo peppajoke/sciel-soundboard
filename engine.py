@@ -316,7 +316,7 @@ class Engine:
                          key=len, reverse=True)
         out, total = [], 0
         for phrase in phrases:
-            if total + len(phrase) > 700:
+            if total + len(phrase) > 250:
                 break
             out.append(phrase)
             total += len(phrase) + 2
