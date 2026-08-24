@@ -3,7 +3,6 @@
     "Speakers (Realtek(R) Audio)"
   ],
   "master_gain": 1.0,
-  "allow_overlap": false,
   "listen": {
     "inputs": [
       {
@@ -11,7 +10,27 @@
         "loopback": true
       },
       {
-        "device": "Microphone (NVIDIA Broadcast)",
+        "device": "Voicemeeter VAIO3 Input (VB-Audio Voicemeeter VAIO)",
+        "loopback": true
+      },
+      {
+        "device": "Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)",
+        "loopback": true
+      },
+      {
+        "device": "Voicemeeter Out A4 (VB-Audio Voicemeeter VAIO)",
+        "loopback": false
+      },
+      {
+        "device": "Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)",
+        "loopback": false
+      },
+      {
+        "device": "Voicemeeter Out B2 (VB-Audio Voicemeeter VAIO)",
+        "loopback": false
+      },
+      {
+        "device": "Voicemeeter Out A2 (VB-Audio Voicemeeter VAIO)",
         "loopback": false
       }
     ],
@@ -27,7 +46,7 @@
     "budget_count": 10,
     "budget_window_s": 300
   },
-  "auto_enabled": false,
+  "auto_enabled": true,
   "random": {
     "enabled": false,
     "min_minutes": 4.0,
@@ -36,5 +55,6 @@
   },
   "nas_inbox": "//192.168.1.169/media/soundboard/inbox",
   "nas_poll_s": 20,
-  "port": 8770
+  "port": 8770,
+  "allow_overlap": false
 }

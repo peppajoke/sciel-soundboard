@@ -105,6 +105,17 @@ Williams, Tim Robinson, Trump, DJ Khaled and Arrested Development.
 Deleting a source never deletes clips; they just become unassigned. The board
 has a source filter next to the tabs.
 
+### Mapping clips to sources fast
+
+**/map** (link in the header) is a two-pane screen built for doing the whole
+backlog in one sitting: clips on the left, sources on the right.
+
+- **1**–**9** assign the selected clip to that source and jump to the next one.
+  **0** clears it. Sources past the ninth are click-only.
+- **Up/Down** move, **Space** previews.
+- Previews are local to the browser — mapping never fires anything on stream.
+- "Unassigned only" is on by default, so the list empties as you work.
+
 ## Sorting
 
 A–Z by default — with dozens of pads it is the only order you can build muscle

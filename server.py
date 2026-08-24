@@ -131,6 +131,11 @@ def sources_page():
     return send_from_directory(ROOT / "static", "sources.html")
 
 
+@app.get("/map")
+def map_page():
+    return send_from_directory(ROOT / "static", "map.html")
+
+
 @app.get("/api/sources")
 def list_sources():
     counts = engine.library.source_counts()
