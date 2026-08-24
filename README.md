@@ -228,6 +228,17 @@ handful you actually picked.
 - Unlike auto mode, this setting **persists across restarts** — it is a slow
   background flourish, not something that can misfire on a sentence.
 
+## Declicking
+
+Playback ramps in over 4 ms, out over 6 ms, and over 8 ms when a clip is cut
+off by another. This is not cosmetic: a trim point lands on an arbitrary
+sample, essentially never a zero crossing, so a trimmed clip otherwise starts
+and ends on a step — and a step is heard as a click. 21 of 66 clips here began
+or ended on a jump big enough to be audible, the worst at 0.18 of full scale.
+
+Cutting a playing clip has the same problem, so `replace()` releases the
+outgoing voice with a ramp rather than discarding it mid-waveform.
+
 ## One sound at a time
 
 A new clip always cuts whatever is still playing. Two soundbites at once is

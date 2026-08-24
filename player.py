@@ -27,25 +27,60 @@ BLOCK = 512          # ~10 ms at 48k: low latency, still large enough to be safe
 RATE = 48000
 CHANNELS = 2
 
+# Declick envelopes. A trim point lands on an arbitrary sample, almost never a
+# zero crossing, so playback would start and end on a step -- which is heard as
+# a click or crackle. Same for cutting a clip short. A few milliseconds of
+# ramp removes it without being audible as a fade.
+FADE_IN_FRAMES = int(RATE * 0.004)     # 4 ms
+FADE_OUT_FRAMES = int(RATE * 0.006)    # 6 ms
+RELEASE_FRAMES = int(RATE * 0.008)     # 8 ms, when a clip is cut off early
+
 
 class _Voice:
-    """One in-flight clip playback."""
+    """One in-flight clip playback, with declick ramps at both ends."""
 
     def __init__(self, data: np.ndarray, gain: float = 1.0):
         self.data = data
         self.pos = 0
         self.gain = gain
+        self.releasing = False      # cut short: ramp down and finish
+        self.release_pos = 0
 
     def read(self, frames: int) -> np.ndarray:
         chunk = self.data[self.pos : self.pos + frames]
+        start = self.pos
         self.pos += len(chunk)
         if len(chunk) < frames:
             pad = np.zeros((frames - len(chunk), CHANNELS), dtype=np.float32)
             chunk = np.vstack([chunk, pad])
-        return chunk * self.gain
+        out = chunk * self.gain
+
+        n = len(self.data)
+        idx = np.arange(start, start + frames)
+
+        # Ramp in from silence, and out into it, so a trim that starts or ends
+        # mid-waveform does not present a step to the DAC.
+        if start < FADE_IN_FRAMES and FADE_IN_FRAMES:
+            env = np.clip(idx / FADE_IN_FRAMES, 0.0, 1.0)
+            out = out * env[:, None]
+        if start + frames > n - FADE_OUT_FRAMES and FADE_OUT_FRAMES:
+            env = np.clip((n - idx) / FADE_OUT_FRAMES, 0.0, 1.0)
+            out = out * env[:, None]
+
+        if self.releasing:
+            r = np.arange(self.release_pos, self.release_pos + frames)
+            out = out * np.clip(1.0 - r / RELEASE_FRAMES, 0.0, 1.0)[:, None]
+            self.release_pos += frames
+        return out
+
+    def release(self) -> None:
+        """Cut this clip off with a short ramp instead of an instant stop."""
+        self.releasing = True
 
     @property
     def done(self) -> bool:
+        if self.releasing and self.release_pos >= RELEASE_FRAMES:
+            return True
         return self.pos >= len(self.data)
 
 
@@ -60,6 +95,8 @@ class _Sink:
 
     def __init__(self, index: int, master_gain: float):
         self.master_gain = master_gain
+        self.underruns = 0
+        self.last_status = ""
         self.voices: list[_Voice] = []
         self.lock = threading.Lock()
         # latency="low" asks PortAudio for the device's minimum safe buffer.
@@ -74,6 +111,12 @@ class _Sink:
         self.stream.start()
 
     def _callback(self, outdata, frames, time_info, status):
+        # PortAudio reports underruns here. Ignoring this flag is how a
+        # too-small buffer turns into "the soundbites are crackly" with no
+        # other symptom -- the audio path never raises.
+        if status:
+            self.underruns += 1
+            self.last_status = str(status)
         with self.lock:
             if not self.voices:
                 outdata.fill(0)
@@ -89,12 +132,22 @@ class _Sink:
         outdata[:] = mix
 
     def replace(self, data: np.ndarray, gain: float) -> None:
+        """Start `data`, ramping down anything already playing.
+
+        The outgoing clip is released rather than dropped: discarding a voice
+        mid-waveform is a step change, and steps click. It lingers for a few
+        milliseconds only, so this is still one sound at a time.
+        """
         with self.lock:
-            self.voices = [_Voice(data, gain)]
+            for v in self.voices:
+                v.release()
+            self.voices.append(_Voice(data, gain))
 
     def clear(self) -> None:
+        # Ramp down rather than truncate, for the same reason as replace().
         with self.lock:
-            self.voices.clear()
+            for v in self.voices:
+                v.release()
 
     @property
     def busy(self) -> bool:
@@ -187,6 +240,10 @@ class Player:
     @property
     def playing(self) -> bool:
         return any(sink.busy for sink in self._sinks)
+
+    @property
+    def underruns(self) -> int:
+        return sum(sink.underruns for sink in self._sinks)
 
     def close(self) -> None:
         for sink in self._sinks:

@@ -15,8 +15,8 @@
       "random_ok": false,
       "source": "wendy-williams-7927",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787593676.1548352,
       "finished": true,
       "added_at": 1787538909.924791
     },
@@ -35,8 +35,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787584940.1961744,
       "finished": true,
       "added_at": 1787538910.4869719
     },
@@ -55,8 +55,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584840.2800844,
+      "plays": 4,
+      "last_played": 1787593688.113459,
       "finished": true,
       "added_at": 1787538910.9074614
     },
@@ -75,8 +75,8 @@
       "random_ok": false,
       "source": "dj-khaled-3180",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787584817.212057,
+      "plays": 2,
+      "last_played": 1787593710.3367856,
       "finished": true,
       "added_at": 1787538911.38667
     },
@@ -135,8 +135,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787584833.0997455,
+      "plays": 5,
+      "last_played": 1787593650.617113,
       "finished": true,
       "added_at": 1787538912.4115906
     },
@@ -158,8 +158,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584560.75208,
+      "plays": 4,
+      "last_played": 1787593827.7277083,
       "finished": true,
       "added_at": 1787538912.7291157
     },
@@ -196,8 +196,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584926.080714,
+      "plays": 3,
+      "last_played": 1787593637.224403,
       "finished": true,
       "added_at": 1787540853.6944506
     },
@@ -368,8 +368,8 @@
       "random_ok": false,
       "source": "wendy-williams-7927",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787543331.479109,
+      "plays": 2,
+      "last_played": 1787584961.0543714,
       "finished": true,
       "added_at": 1787540856.9442508
     },
@@ -409,8 +409,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 2,
+      "last_played": 1787585436.8338,
       "finished": true,
       "added_at": 1787540858.1052797
     },
@@ -419,7 +419,8 @@
       "name": "dont like him",
       "file": "dont-like-him-68ce8b.wav",
       "triggers": [
-        "bald man"
+        "bald man",
+        "bald guy"
       ],
       "tags": [],
       "threshold": null,
@@ -429,8 +430,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787593609.8453515,
       "finished": true,
       "added_at": 1787540858.3997014
     },
@@ -449,8 +450,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787546527.477407,
+      "plays": 3,
+      "last_played": 1787593737.7637792,
       "finished": true,
       "added_at": 1787540858.6738067
     },
@@ -469,8 +470,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583393.1786094,
+      "plays": 2,
+      "last_played": 1787593374.7483656,
       "finished": true,
       "added_at": 1787540880.1101837
     },
@@ -546,8 +547,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787584653.165038,
+      "plays": 2,
+      "last_played": 1787585083.8909972,
       "finished": true,
       "added_at": 1787540882.3987253
     },
@@ -623,8 +624,8 @@
       "random_ok": false,
       "source": "wendy-williams-7927",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787544470.3757133,
+      "plays": 3,
+      "last_played": 1787585429.501904,
       "finished": true,
       "added_at": 1787540883.723038
     },
@@ -736,7 +737,9 @@
       "file": "nfl-theme-cfcafb.wav",
       "triggers": [
         "great play",
-        "great move"
+        "great move",
+        "good move",
+        "good play"
       ],
       "tags": [],
       "threshold": null,
@@ -746,8 +749,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584325.123117,
+      "plays": 4,
+      "last_played": 1787593727.9740877,
       "finished": true,
       "added_at": 1787583155.728109
     },
@@ -766,8 +769,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583382.2546465,
+      "plays": 2,
+      "last_played": 1787593274.4029567,
       "finished": true,
       "added_at": 1787583155.8724594
     },
@@ -798,7 +801,9 @@
       "file": "duel-of-the-fates-eebce3.wav",
       "triggers": [
         "prepare for battle",
-        "boss battle time"
+        "boss battle",
+        "big battle",
+        "big fight"
       ],
       "tags": [],
       "threshold": null,
@@ -808,8 +813,8 @@
       "random_ok": false,
       "source": "star-wars-de06",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584892.6041749,
+      "plays": 4,
+      "last_played": 1787593600.56773,
       "finished": true,
       "added_at": 1787583157.1275167
     },
@@ -837,7 +842,9 @@
       "file": "pornhub-intro-40a70e.wav",
       "triggers": [
         "gooning",
-        "porn"
+        "pornhub",
+        "watching porn",
+        "watch porn"
       ],
       "tags": [],
       "threshold": null,
@@ -847,8 +854,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787584351.6563487,
+      "plays": 5,
+      "last_played": 1787593257.0754924,
       "finished": true,
       "added_at": 1787583157.4455473
     },
@@ -991,8 +998,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584213.3579943,
+      "plays": 3,
+      "last_played": 1787593354.7597463,
       "finished": true,
       "added_at": 1787583160.2719133
     },
@@ -1031,8 +1038,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787583623.016729,
+      "plays": 3,
+      "last_played": 1787593803.2275925,
       "finished": true,
       "added_at": 1787583160.5265596
     },
@@ -1051,8 +1058,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787584318.6894581,
+      "plays": 4,
+      "last_played": 1787593649.210426,
       "finished": true,
       "added_at": 1787583160.662938
     },
@@ -1089,8 +1096,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583522.1741414,
+      "plays": 2,
+      "last_played": 1787584945.0395896,
       "finished": true,
       "added_at": 1787583161.0147643
     },
@@ -1265,8 +1272,8 @@
       "random_ok": false,
       "source": "the-simpsons-1fe0",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787593701.105908,
       "finished": true,
       "added_at": 1787583163.4358501
     },
