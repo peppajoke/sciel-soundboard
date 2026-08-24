@@ -237,6 +237,13 @@ class Library:
             items.sort(key=lambda c: -c.added_at)
         elif sort == "oldest":
             items.sort(key=lambda c: c.added_at)
+        elif sort == "longest":
+            # play_duration, not file duration: the trimmed length is what you
+            # actually hear, and sorting by the raw file would rank a 2s bite
+            # cut from a 40s upload as "long".
+            items.sort(key=lambda c: (-c.play_duration, c.name.lower()))
+        elif sort == "shortest":
+            items.sort(key=lambda c: (c.play_duration, c.name.lower()))
         else:
             items.sort(key=lambda c: c.name.lower())
         return items

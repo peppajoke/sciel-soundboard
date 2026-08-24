@@ -143,8 +143,9 @@ backlog in one sitting: clips on the left, sources on the right.
 ## Sorting
 
 A–Z by default — with dozens of pads it is the only order you can build muscle
-memory against, because it doesn't move. Also sortable by most played, newest
-and oldest. The choice is remembered.
+memory against, because it doesn't move. Also sortable by most played, newest,
+oldest, longest and shortest (length is the trimmed play length, not the
+raw file). The choice is remembered.
 
 Play counts exist **only** to drive that sort and are not shown on the pads.
 They are counted in memory and flushed to disk every 15 s, never on the press
