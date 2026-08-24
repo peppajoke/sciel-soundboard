@@ -95,10 +95,24 @@ def stitch(tail: list[str], new: list[str], max_words: int = 60) -> list[str]:
     if not new:
         return tail[-max_words:]
 
+    # Overlap is matched FUZZILY, not exactly. Whisper re-decodes the same
+    # audio slightly differently each scan -- "question drive" one window,
+    # "question of drive" the next -- so exact suffix/prefix equality fails
+    # constantly and the same speech gets appended over and over:
+    #   "the license plate question drive the license plate question of drive"
+    # Comparing on similarity keeps one copy of re-heard speech instead.
     limit = min(len(tail), len(new))
+    best_k, best_ratio = 0, 0.0
     for k in range(limit, 0, -1):
-        if tail[-k:] == new[:k]:
-            return (tail + new[k:])[-max_words:]
+        ratio = _ratio(" ".join(tail[-k:]), " ".join(new[:k]))
+        # Longer overlaps win ties, so re-heard speech collapses fully rather
+        # than leaving a fragment behind.
+        if ratio >= 0.75 and ratio > best_ratio + 1e-9:
+            best_k, best_ratio = k, ratio
+            if ratio == 1.0:
+                break
+    if best_k:
+        return (tail + new[best_k:])[-max_words:]
     # No overlap at all: a gap in speech, or whisper changed its mind entirely.
     return (tail + new)[-max_words:]
 

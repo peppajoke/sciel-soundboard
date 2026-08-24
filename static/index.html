@@ -84,15 +84,18 @@
   .meter.dead .fill { background:var(--hot); }
   .meter .nm { width:104px; overflow:hidden; text-overflow:ellipsis;
                white-space:nowrap; }
-  /* Fixed height, not max-height: the feed filling up used to grow the panel
-     and push Settings down the page while you were using it. */
-  #feed { height:300px; overflow:auto; font-size:12px;
-          font-family:ui-monospace,Consolas,monospace; }
-  .ev { padding:3px 0; border-bottom:1px solid var(--line); }
-  .ev .src { color:var(--dim); }
-  .ev.fire { color:var(--good); }
-  .ev.err { color:var(--hot); }
-  .ev .sc { color:var(--warn); }
+  /* One box showing the current rolling word stream. Fixed height so the
+     panel below never moves as words come and go. */
+  #stream { height:104px; overflow:hidden; padding:10px 11px; border-radius:8px;
+            background:var(--panel2); border:1px solid var(--line);
+            font-size:14px; line-height:1.5; word-break:break-word;
+            display:flex; align-items:center; }
+  #stream .quiet { color:var(--dim); font-style:italic; }
+  #stream .live { color:var(--text); }
+  #stream b { color:var(--good); }
+  #lastFire { height:32px; margin-top:8px; font-size:12px; color:var(--dim);
+              display:flex; align-items:center; gap:6px; }
+  #lastFire .clip { color:var(--good); font-weight:600; }
   .row { display:flex; gap:8px; align-items:center; }
   /* Fixed widths on purpose: these repaint every second, and letting them
      size to their text made the header re-wrap and shove the page down. */
@@ -169,7 +172,8 @@
     <section>
       <h2>Live transcript</h2>
       <div id="meters"></div>
-      <div id="feed"></div>
+      <div id="stream"></div>
+      <div id="lastFire"></div>
     </section>
 
     <section>
@@ -717,6 +721,8 @@ function paintAuto(s) {
     el.classList.toggle('dead', !c.healthy);
   });
 
+  paintStream(s);
+
   const l = s.listener || {};
   const caps = l.captures || [];
   const bad = caps.filter(c => !c.healthy);
@@ -731,31 +737,53 @@ function paintAuto(s) {
   h.title = l.model || '';
 }
 
-// ---------- feed ----------
+// ---------- live stream ----------
+// One display of the current rolling word buffer, rather than a scrolling log
+// of every scan window -- the windows overlap, so the log was mostly the same
+// words printed again and again.
+let lastFire = null;
+
+function paintStream(s) {
+  const streams = (s.streams || []).filter(x => x.text);
+  const box = $('#stream');
+  if (!streams.length) {
+    box.innerHTML = '<span class="quiet">' +
+      (s.listener && s.listener.running ? 'listening…' : 'listener off') + '</span>';
+  } else {
+    // Newest source first when several are being scanned.
+    streams.sort((a, b) => a.age - b.age);
+    box.innerHTML = streams.map(x =>
+      `<span class="live">${escapeHtml(x.text)}</span>`).join('<br>');
+  }
+
+  const lf = $('#lastFire');
+  if (lastFire) {
+    const ago = Math.round((Date.now() - lastFire.at) / 1000);
+    lf.innerHTML = `fired <span class="clip">${escapeHtml(lastFire.name)}</span>` +
+                   ` &middot; ${ago}s ago` +
+                   (lastFire.phrase ? ` &middot; "${escapeHtml(lastFire.phrase)}"` : '');
+  } else {
+    lf.textContent = '';
+  }
+}
+
+// Still poll events, but only to notice fires and errors.
 async function pollFeed() {
   try {
     const evs = await api('/api/events?since=' + since);
     for (const e of evs) {
       since = Math.max(since, e.at);
-      const d = document.createElement('div');
-      d.className = 'ev' + (e.fired ? ' fire' : '') + (e.kind === 'error' ? ' err' : '');
-      const t = new Date(e.at * 1000).toLocaleTimeString();
-      if (e.kind === 'heard') {
-        const scoreTxt = e.best != null ? ` <span class="sc">${e.best}</span>` : '';
-        const note = e.note ? ` <span class="src">(${e.note})</span>` : '';
-        d.innerHTML = `<span class="src">${t} ${e.source}·</span> ` +
-          escapeHtml(e.text) + scoreTxt + note +
-          (e.fired ? ` → <b>${escapeHtml(e.fired)}</b>` : '');
-      } else {
-        d.innerHTML = `<span class="src">${t}</span> ${escapeHtml(e.text)}`;
+      if (e.kind === 'play') {
+        lastFire = {name: e.text, at: Date.now(), phrase: null};
+      } else if (e.kind === 'heard' && e.fired) {
+        lastFire = {name: e.fired, at: Date.now(), phrase: e.phrase};
+      } else if (e.kind === 'error') {
+        $('#lastFire').innerHTML =
+          `<span style="color:var(--hot)">${escapeHtml(e.text)}</span>`;
       }
-      $('#feed').prepend(d);
     }
-    while ($('#feed').childElementCount > 200) $('#feed').lastChild.remove();
   } catch {}
 }
-// Sentinel names for "whatever Windows is defaulting to", stored as device:null
-const DEFAULT_LABEL = loop => loop ? '__default_output__' : '__default_input__';
 const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 // ---------- settings ----------

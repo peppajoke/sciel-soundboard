@@ -151,7 +151,7 @@
         "i think i might come"
       ],
       "tags": [],
-      "threshold": null,
+      "threshold": 1.0,
       "duration": 9.816,
       "start": 2.14,
       "end": 6.118,
@@ -242,7 +242,11 @@
       "name": "you sound like you're from london",
       "file": "15-forgetting-sarah-marshall-you-sound-like-you-re-from-london-youtube-trimmed-f07f1b.wav",
       "triggers": [
-        "british"
+        "govna",
+        "london town",
+        "liverpool",
+        "fish and chips",
+        "the queen"
       ],
       "tags": [],
       "threshold": null,
@@ -252,8 +256,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787543259.3725429,
+      "plays": 2,
+      "last_played": 1787594108.2858896,
       "finished": true,
       "added_at": 1787540854.6033146
     },
@@ -655,7 +659,9 @@
       "file": "this-is-fine-643063.wav",
       "triggers": [
         "what a disaster",
-        "horrific"
+        "horrific",
+        "this is fine",
+        "that's fine"
       ],
       "tags": [],
       "threshold": null,
@@ -726,8 +732,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787584055.8989398,
+      "plays": 2,
+      "last_played": 1787594378.8052964,
       "finished": true,
       "added_at": 1787540885.3599749
     },
@@ -1096,8 +1102,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584945.0395896,
+      "plays": 3,
+      "last_played": 1787594257.9482052,
       "finished": true,
       "added_at": 1787583161.0147643
     },

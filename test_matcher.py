@@ -133,6 +133,61 @@ def main():
         matcher.find(" ".join(seq), trip) is not None
         and matcher.find("fuck fuck", trip) is None))
 
+    # --- continuous speech simulation --------------------------------------
+    # Mimics the real loop: overlapping scan windows, stitched into a rolling
+    # 20-word stream, with the WHOLE stream evaluated after each update.
+    def run_stream(windows, triggers, keep=20, cooldown_windows=2):
+        """Feed overlapping windows through the real pipeline shape.
+
+        Includes the per-clip cooldown, because the stream alone cannot
+        prevent a second fire: after a match consumes the stream, the next
+        overlapping scan re-delivers the same words. The cooldown is what
+        makes an utterance fire once, which is why its floor (5 s even when
+        "disabled") is longer than the 3 s scan window.
+        """
+        stream, fired, cooling = [], [], 0
+        clips = [FakeClip("target", triggers)]
+        for w in windows:
+            stream = matcher.stitch(stream, n(w), max_words=keep)
+            hit = matcher.find(" ".join(stream), clips)
+            if hit and cooling == 0:
+                fired.append(" ".join(stream))
+                stream = []
+                cooling = cooldown_windows
+            elif cooling:
+                cooling -= 1
+        return fired
+
+    # A trigger completed across two windows fires exactly once.
+    results.append(check(
+        "trigger spanning windows fires once per utterance",
+        len(run_stream(["fuck fuck", "fuck fuck fuck", "fuck fuck fuck and then i died"],
+                       ["fuck fuck fuck"])) == 1))
+
+    # Buried in a long ramble, arriving a few words per window.
+    rambling = ["so anyway i was", "i was going through the", "through the second area and",
+                "area and i said fuck", "i said fuck fuck fuck", "fuck fuck and then i died"]
+    results.append(check(
+        "trigger fires inside continuous rambling speech",
+        len(run_stream(rambling, ["fuck fuck fuck"])) >= 1))
+
+    # Nothing should fire from unrelated continuous speech.
+    results.append(check(
+        "continuous unrelated speech never fires",
+        run_stream(["i need to go find", "go find more potions before",
+                    "before the next boss fight"], ["you shall not pass"]) == []))
+
+    # The stream is bounded, so old words fall out of range.
+    long_stream = []
+    for w in ["one two three four five", "six seven eight nine ten",
+              "eleven twelve thirteen fourteen fifteen",
+              "sixteen seventeen eighteen nineteen twenty",
+              "twenty one twenty two twenty three"]:
+        long_stream = matcher.stitch(long_stream, n(w), max_words=20)
+    results.append(check(
+        "the stream stays capped at 20 words",
+        len(long_stream) == 20 and "one" not in long_stream[:1]))
+
     print(f"\n{sum(results)}/{len(results)} passed")
     return 0 if all(results) else 1
 

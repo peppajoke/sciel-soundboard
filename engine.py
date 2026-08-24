@@ -34,11 +34,7 @@ SELF_HEAR_GUARD_S = 2.5
 # the same clip repeatedly off a single phrase.
 BYPASS_COOLDOWN_S = 5.0
 
-# Silence long enough to call it a new utterance. Below this, consecutive
-# transcripts are stitched into one sequence so a phrase can span windows;
-# above it the running transcript is dropped, so a trigger cannot be assembled
-# from words said a minute apart.
-STREAM_GAP_S = 4.0
+
 
 
 class Engine:
@@ -155,10 +151,13 @@ class Engine:
         # missed any phrase that straddled a window boundary -- "fuck fuck
         # fuck" arriving as "fuck fuck" then "fuck fuck fuck" never matched.
         now = time.time()
+        gap = float(listen.get("stream_gap_s", 10.0))
+        keep = int(listen.get("stream_words", 20))
+
         prev_words, last_seen = self._stream.get(line.source, ([], 0.0))
-        if now - last_seen > STREAM_GAP_S:
+        if now - last_seen > gap:
             prev_words = []
-        stitched = matcher.stitch(prev_words, words)
+        stitched = matcher.stitch(prev_words, words, max_words=keep)
         self._stream[line.source] = (stitched, now)
 
         text = " ".join(stitched)
@@ -175,7 +174,7 @@ class Engine:
 
         with self._lock:
             if now - self._last_fire_at < self._cooldown("global_cooldown_s", 2.0):
-                self._event("heard", line.text, source=line.source, fired=None,
+                self._event("heard", text, source=line.source, fired=None,
                             note="global cooldown")
                 return
 
@@ -229,6 +228,23 @@ class Engine:
         except Exception as exc:
             log.exception("auto play failed")
             self._event("error", f"auto play failed: {exc}")
+
+    def trigger_prompt(self) -> str:
+        """Trigger phrases as a whisper decoding prompt.
+
+        Capped because whisper only accepts a prompt of a couple of hundred
+        tokens; the longest triggers are the most distinctive, so they win the
+        space when there are more phrases than fit.
+        """
+        phrases = sorted({t for c in self.library.auto_clips() for t in c.triggers},
+                         key=len, reverse=True)
+        out, total = [], 0
+        for phrase in phrases:
+            if total + len(phrase) > 700:
+                break
+            out.append(phrase)
+            total += len(phrase) + 2
+        return ", ".join(out)
 
     # ---------- random dropper ----------
 
@@ -315,7 +331,8 @@ class Engine:
         if self.listener and self.listener.running:
             return
         from listener import Listener
-        self.listener = Listener(self.cfg["listen"], self.on_line, self.gate)
+        self.listener = Listener(self.cfg["listen"], self.on_line, self.gate,
+                                 prompt_fn=self.trigger_prompt)
         self._event("info", "starting listener (loading whisper model)")
         threading.Thread(target=self._start_listener_bg, daemon=True).start()
 
@@ -383,6 +400,12 @@ class Engine:
             "auto_clips": len(self.library.auto_clips()),
             "budget": self._budget_state(),
             "cooldowns_off": bool(self.cfg["listen"].get("cooldowns_off")),
+            # The live word stream, for the transcript display.
+            "streams": [
+                {"source": src, "text": " ".join(words),
+                 "age": round(time.time() - seen, 1)}
+                for src, (words, seen) in self._stream.items()
+            ],
             "random": {
                 "enabled": bool(self.cfg.get("random", {}).get("enabled")),
                 "eligible": len(self.library.random_clips()),

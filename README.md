@@ -174,7 +174,18 @@ Short triggers need a stricter threshold than long ones — a two-word trigger
 hits 0.8 against unrelated speech far more often than a six-word one. Set a
 per-clip override in the clip editor for those.
 
-The transcript panel has a **level meter per input**, because a silent room and
+The transcript panel shows **one live display of the rolling word stream** —
+the last `stream_words` (20) words as a single continuous sequence, cleared
+after `stream_gap_s` (10 s) of silence. The whole sequence is re-evaluated
+every time it changes, so a trigger fires wherever it lands in continuous
+speech. It is not a scrolling log: the scan windows overlap, so a log was
+mostly the same words printed over and over.
+
+Whisper is prompted with your trigger phrases, which biases decoding toward
+the words that matter. Measured on a 12-clip eval: 0.872 -> 0.912, the same
+gain as switching to a model three times the size, and no slower.
+
+The panel also has a **level meter per input**, because a silent room and
 a wrongly-picked device look identical in an empty feed. It also prints an
 occasional "(sound, no speech)" line when audio arrives but whisper finds no
 words — again, so a working listener never looks dead.

@@ -36,6 +36,9 @@ DEFAULTS = {
         # wait to about that, while keeping the full window of context.
         # Transcription costs a few ms, so the extra work is free here.
         "hop_s": 0.75,
+        # Beam search rather than greedy. Measured 208 ms/clip when combined
+        # with the trigger prompt, well inside the 750 ms hop.
+        "beam_size": 5,
         "threshold": 0.82,       # default fuzzy-match score to fire
         # Per-clip cooldown, applied to EVERY automatic path (trigger matches
         # and random drops alike). A soundbite lands once and then rests --
@@ -54,6 +57,15 @@ DEFAULTS = {
         # "Kiss" against a "kiss" trigger is an exact hit and must still fire.
         "min_words": 2,
         "short_line_threshold": 0.95,
+
+        # The running transcript. Speech arrives in overlapping scan windows,
+        # so matching each window on its own misses any phrase that straddles
+        # a boundary. Instead the last `stream_words` words are kept as one
+        # continuous sequence and the WHOLE sequence is re-evaluated every
+        # time it changes. A silence longer than `stream_gap_s` clears it, so
+        # a trigger can never be assembled from words minutes apart.
+        "stream_words": 20,
+        "stream_gap_s": 10.0,
 
         # Rate budget: at most `budget_count` auto-fires per `budget_window_s`.
         # Without this, a chatty cutscene can dump a dozen soundbites in a
