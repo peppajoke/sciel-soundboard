@@ -29,6 +29,11 @@ log = logging.getLogger("soundboard.engine")
 # window, so the tail of the clip is still inside the next chunk.
 SELF_HEAR_GUARD_S = 2.5
 
+# What every cooldown collapses to when "disable cooldowns" is ticked. Low
+# enough to feel off, high enough that overlapping scan windows cannot fire
+# the same clip repeatedly off a single phrase.
+BYPASS_COOLDOWN_S = 5.0
+
 
 class Engine:
     def __init__(self):
@@ -149,7 +154,7 @@ class Engine:
 
         now = time.time()
         with self._lock:
-            if now - self._last_fire_at < float(listen.get("global_cooldown_s", 2.0)):
+            if now - self._last_fire_at < self._cooldown("global_cooldown_s", 2.0):
                 self._event("heard", line.text, source=line.source, fired=None,
                             note="global cooldown")
                 return
@@ -183,7 +188,7 @@ class Engine:
                         note=f"short line, needs {floor:.2f}" if short else None)
             return
 
-        cooldown = float(listen.get("cooldown_s", 10.0))
+        cooldown = self._cooldown("cooldown_s", 180.0)
         with self._lock:
             last = self._clip_last_fired.get(hit.clip_id, 0.0)
             if now - last < cooldown:
@@ -203,6 +208,13 @@ class Engine:
             self._event("error", f"auto play failed: {exc}")
 
     # ---------- random dropper ----------
+
+    def _cooldown(self, key: str, default: float) -> float:
+        """Effective cooldown, honouring the 'disable cooldowns' switch."""
+        value = float(self.cfg["listen"].get(key, default))
+        if self.cfg["listen"].get("cooldowns_off"):
+            return min(value, BYPASS_COOLDOWN_S)
+        return value
 
     def _budget_allows(self, now: float) -> bool:
         """True if the shared auto/random fire budget has room left."""
@@ -243,7 +255,7 @@ class Engine:
             # Avoid repeating the last pick when there is a real choice --
             # random with replacement produces doubles often enough to look
             # broken to anyone watching.
-            cooldown = float(self.cfg["listen"].get("cooldown_s", 180))
+            cooldown = self._cooldown("cooldown_s", 180.0)
             with self._lock:
                 rested = [c for c in pool
                           if now - self._clip_last_fired.get(c.id, 0.0) >= cooldown]
@@ -347,6 +359,7 @@ class Engine:
             "clips": len(self.library.clips),
             "auto_clips": len(self.library.auto_clips()),
             "budget": self._budget_state(),
+            "cooldowns_off": bool(self.cfg["listen"].get("cooldowns_off")),
             "random": {
                 "enabled": bool(self.cfg.get("random", {}).get("enabled")),
                 "eligible": len(self.library.random_clips()),

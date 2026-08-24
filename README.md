@@ -191,6 +191,10 @@ didn't fire instead of guessing.
 - **Per-clip cooldown** (3 min) — a soundbite lands once and then rests.
   Applies to trigger matches *and* random drops. Manual presses are exempt.
 - **Global cooldown** (2 s) — stops pile-ups.
+- **"Disable cooldowns"** in Settings caps every cooldown at **5 s** rather
+  than removing them. True zero would let one sentence retrigger the same clip
+  on every overlapping scan window — four times a second — which is a stutter,
+  not a bit. The cap only ever lowers a cooldown, so the 2 s global stays 2 s.
 - **Self-hear gate** — the loopback listener is muted while a clip plays plus
   2.5 s after. Without it the soundboard hears its own output and re-triggers.
 

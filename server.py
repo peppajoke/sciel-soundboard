@@ -176,7 +176,7 @@ def source_image(name):
 
 @app.post("/api/sources/<source_id>/image")
 def set_source_image(source_id):
-    """Accept an image for a source and normalise it to a 96px square PNG.
+    """Accept an image for a source and normalise it to a 128px square PNG.
 
     Resizing on upload rather than in CSS keeps the repo small -- a handful of
     phone-camera JPEGs would outweigh the entire clip library otherwise -- and
@@ -197,7 +197,9 @@ def set_source_image(source_id):
         subprocess.run(
             ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(tmp),
              # Cover-crop to a square so faces are not squashed.
-             "-vf", "scale=96:96:force_original_aspect_ratio=increase,crop=96:96",
+             # 128 rather than the 38px the button draws: HiDPI screens ask
+             # for 2x, and an upscaled avatar looks obviously soft.
+             "-vf", "scale=128:128:force_original_aspect_ratio=increase,crop=128:128",
              "-frames:v", "1", str(SOURCE_IMAGES / out_name)],
             check=True)
     except subprocess.CalledProcessError:

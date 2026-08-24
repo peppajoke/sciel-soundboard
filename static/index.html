@@ -33,12 +33,12 @@
 
   #tabs { display:flex; gap:8px; margin-bottom:10px; }
   #srcTabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
-  #srcTabs .tab { padding:4px 10px 4px 4px; font-size:13px; border-radius:99px;
-                  display:inline-flex; align-items:center; gap:7px; }
-  #srcTabs .tab.plain { padding-left:10px; }
-  .avatar { width:22px; height:22px; border-radius:50%; object-fit:cover;
+  #srcTabs .tab { padding:4px 12px 4px 4px; font-size:13px; border-radius:99px;
+                  display:inline-flex; align-items:center; gap:9px; }
+  #srcTabs .tab.plain { padding:8px 12px; }
+  .avatar { width:38px; height:38px; border-radius:50%; object-fit:cover;
             flex:none; display:inline-flex; align-items:center;
-            justify-content:center; font-size:10px; font-weight:700;
+            justify-content:center; font-size:15px; font-weight:700;
             color:#0b0e13; }
   .tab { color:var(--dim); }
   .tab.sel { color:var(--text); border-color:var(--accent); background:var(--panel); }
@@ -187,6 +187,12 @@
         <span style="color:var(--dim)">per</span>
         <input id="budgetWindow" type="text" style="width:70px" inputmode="numeric">
         <span style="color:var(--dim)">minutes</span>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <input type="checkbox" id="cooldownsOff">
+        <label for="cooldownsOff" style="margin:0;color:var(--text)"
+          title="Caps every cooldown at 5 seconds">Disable cooldowns</label>
       </div>
 
       <div class="row" style="margin-top:14px">
@@ -767,6 +773,7 @@ async function loadCfg() {
 
   $('#threshold').value = cfg.listen.threshold;
   $('#thVal').textContent = cfg.listen.threshold;
+  $('#cooldownsOff').checked = !!cfg.listen.cooldowns_off;
   $('#randomOn').checked = !!cfg.random.enabled;
   $('#randMin').value = cfg.random.min_minutes;
   $('#randMax').value = cfg.random.max_minutes;
@@ -860,6 +867,7 @@ function readPanel() {
         loopback: i.dataset.loop === '1',
       })),
       threshold: parseFloat($('#threshold').value),
+      cooldowns_off: $('#cooldownsOff').checked,
       budget_count: parseInt($('#budgetCount').value, 10) || 0,
       budget_window_s: (parseFloat($('#budgetWindow').value) || 5) * 60,
     },

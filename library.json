@@ -55,8 +55,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787584637.5644038,
       "finished": true,
       "added_at": 1787538910.9074614
     },
@@ -95,8 +95,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787544476.4040968,
+      "plays": 2,
+      "last_played": 1787584648.3279908,
       "finished": true,
       "added_at": 1787538911.646987
     },
@@ -135,8 +135,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787544483.9073093,
+      "plays": 2,
+      "last_played": 1787584630.3891935,
       "finished": true,
       "added_at": 1787538912.4115906
     },
@@ -546,8 +546,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787584653.165038,
       "finished": true,
       "added_at": 1787540882.3987253
     },

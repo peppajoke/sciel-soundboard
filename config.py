@@ -43,6 +43,12 @@ DEFAULTS = {
         # exempt: when Jack presses a pad he means it.
         "cooldown_s": 180.0,
         "global_cooldown_s": 2.0,  # any clip: stops a pile-up
+
+        # "Disable cooldowns" in the UI. Not actually zero: it CAPS every
+        # cooldown at 5 s. Truly zero would let one sentence retrigger the
+        # same clip on every overlapping window, which is a stutter rather
+        # than a bit -- the rolling window re-scans four times a second.
+        "cooldowns_off": False,
         # Transcripts shorter than this are held to `short_line_threshold`
         # instead of being thrown away. A one-word chunk is usually noise, but
         # "Kiss" against a "kiss" trigger is an exact hit and must still fire.
