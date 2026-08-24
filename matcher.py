@@ -28,6 +28,7 @@ from difflib import SequenceMatcher
 _FILLER = {"uh", "um", "erm", "ah", "eh", "hmm", "mm", "mhm", "like", "you know"}
 
 _WORD_RE = re.compile(r"[a-z0-9']+")
+_APOSTROPHE = re.compile(r"'")
 
 
 def normalize(text: str) -> list[str]:
@@ -35,7 +36,11 @@ def normalize(text: str) -> list[str]:
     text = unicodedata.normalize("NFKD", text)
     text = "".join(c for c in text if not unicodedata.combining(c))
     words = _WORD_RE.findall(text.lower())
-    return [w for w in words if w not in _FILLER]
+    # Strip apostrophes AFTER tokenising: "i'm" and "im" are the same word, and
+    # whisper picks differently between passes over the same audio. Applied to
+    # triggers too, so both sides agree.
+    words = [_APOSTROPHE.sub("", w) for w in words]
+    return [w for w in words if w and w not in _FILLER]
 
 
 def _ratio(a: str, b: str) -> float:
@@ -95,25 +100,26 @@ def stitch(tail: list[str], new: list[str], max_words: int = 60) -> list[str]:
     if not new:
         return tail[-max_words:]
 
-    # Overlap is matched FUZZILY, not exactly. Whisper re-decodes the same
-    # audio slightly differently each scan -- "question drive" one window,
-    # "question of drive" the next -- so exact suffix/prefix equality fails
-    # constantly and the same speech gets appended over and over:
-    #   "the license plate question drive the license plate question of drive"
-    # Comparing on similarity keeps one copy of re-heard speech instead.
-    limit = min(len(tail), len(new))
-    best_k, best_ratio = 0, 0.0
-    for k in range(limit, 0, -1):
-        ratio = _ratio(" ".join(tail[-k:]), " ".join(new[:k]))
-        # Longer overlaps win ties, so re-heard speech collapses fully rather
-        # than leaving a fragment behind.
-        if ratio >= 0.75 and ratio > best_ratio + 1e-9:
-            best_k, best_ratio = k, ratio
-            if ratio == 1.0:
-                break
-    if best_k:
-        return (tail + new[best_k:])[-max_words:]
-    # No overlap at all: a gap in speech, or whisper changed its mind entirely.
+    # Find the overlap as the longest matching BLOCK of words, rather than
+    # comparing an equal-length suffix and prefix. Whisper re-decodes the same
+    # audio slightly differently each pass -- an inserted word, a contraction
+    # spelled differently -- and equal-length comparison fails on any of that,
+    # so the same speech gets appended a second time:
+    #   "going to touch you im going inside i'm going inside"
+    # Block matching survives a changed token in the middle.
+    zone = tail[-len(new):] if len(tail) > len(new) else tail
+    sm = SequenceMatcher(None, zone, new, autojunk=False)
+    match = sm.find_longest_match(0, len(zone), 0, len(new))
+
+    # Credible overlap: the matching block runs to (near) the end of the tail
+    # and starts at (near) the beginning of the new text. Anything else is
+    # genuinely new speech that happens to share a word.
+    if (match.size >= 1
+            and match.a + match.size >= len(zone) - 1
+            and match.b <= 1):
+        return (tail + new[match.b + match.size:])[-max_words:]
+
+    # No overlap: a gap in speech, or whisper changed its mind entirely.
     return (tail + new)[-max_words:]
 
 

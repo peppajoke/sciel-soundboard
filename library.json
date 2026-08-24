@@ -543,7 +543,7 @@
       "file": "hello-29d6ba.wav",
       "triggers": [
         "hey phil",
-        "hello"
+        "hello phil"
       ],
       "tags": [],
       "threshold": null,
@@ -553,8 +553,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787585083.8909972,
+      "plays": 5,
+      "last_played": 1787600103.5875998,
       "finished": true,
       "added_at": 1787540882.3987253
     },
