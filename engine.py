@@ -188,6 +188,15 @@ class Engine:
                              f"resets in {wait}s)")
             return
 
+        # Freshness deadline, checked as late as possible so it accounts for
+        # time spent in this function too.
+        max_age = float(listen.get("max_fire_age_s", 2.0))
+        age = time.time() - getattr(line, "at", now)
+        if age > max_age:
+            self._event("heard", text, source=line.source, fired=None,
+                        note=f"too late to fire ({age:.1f}s old)")
+            return
+
         candidates = self.library.auto_clips()
         hit = matcher.find(text, candidates,
                            float(listen.get("threshold", 0.82)), floor=floor)
@@ -214,6 +223,12 @@ class Engine:
                 self._event("heard", text, source=line.source, fired=None,
                             note=f"clip cooldown ({hit.score:.2f})")
                 return
+
+        age = time.time() - getattr(line, "at", now)
+        if age > max_age:
+            self._event("heard", text, source=line.source, fired=None,
+                        note=f"too late to fire ({age:.1f}s old)")
+            return
 
         clip = self.library.clips[hit.clip_id]
         # The sequence is deliberately NOT cleared here. Clearing it wiped the

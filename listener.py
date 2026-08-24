@@ -59,6 +59,9 @@ log = logging.getLogger("soundboard.listener")
 RATE = 16000          # whisper's native rate; the recorder resamples for us
 SILENCE_RMS = 1e-5    # below this is indistinguishable from digital silence
 SILENT_WARN_S = 45.0
+# Falling this far behind realtime means the backlog is discarded rather than
+# transcribed late.
+MAX_LAG_S = 1.0
 
 
 @dataclass
@@ -97,6 +100,8 @@ class _Capture(threading.Thread):
         self.healthy = True
         self.error = None
         self.peak_db = -120.0      # level of the last chunk, for the UI meter
+        self.lag = 0.0             # seconds behind realtime, if we fall behind
+        self.dropped = 0           # hops discarded to catch up
         self.chunks = 0            # chunks with audio in them
         self.transcribed = 0       # chunks that produced text
         self.device_label = None
@@ -142,6 +147,8 @@ class _Capture(threading.Thread):
                  self.source, mic.name, self.chunk_s, self.hop_s)
         hop_frames = int(RATE * self.hop_s)
         window_frames = int(RATE * self.chunk_s)
+        started = time.time()
+        frames_read = 0
         # Rolling buffer: record a short hop, then transcribe the trailing
         # window. Detection latency becomes the hop rather than the window,
         # and phrases still get full context instead of being cut in half.
@@ -151,6 +158,32 @@ class _Capture(threading.Thread):
                 while not self.stop_flag.is_set():
                     data = rec.record(numframes=hop_frames)
                     chunk = np.asarray(data, dtype=np.float32).flatten()
+                    frames_read += len(chunk)
+
+                    # How far behind realtime are we? If a scan takes longer
+                    # than a hop the recorder queues audio, and every later
+                    # transcript describes speech from further in the past --
+                    # which is how a soundbite lands absurdly late.
+                    now = time.time()
+                    self.lag = (now - started) - (frames_read / RATE)
+                    if self.lag > MAX_LAG_S:
+                        # Throw the backlog away and resynchronise. A late
+                        # soundbite is worse than a missed one.
+                        skipped = 0
+                        while self.lag > 0.3 and skipped < 200:
+                            data = rec.record(numframes=hop_frames)
+                            frames_read += len(np.asarray(data).flatten())
+                            self.lag = (time.time() - started) - (frames_read / RATE)
+                            skipped += 1
+                        self.dropped += skipped
+                        buffer = np.zeros(0, dtype=np.float32)
+                        log.warning("[%s] fell %.1fs behind; dropped %d hop(s)",
+                                    self.source, self.lag + skipped * self.hop_s, skipped)
+                        continue
+
+                    # Stamp with when this audio was CAPTURED, so downstream can
+                    # refuse to fire on anything stale.
+                    captured_at = now
                     buffer = np.concatenate([buffer, chunk])[-window_frames:]
                     audio = buffer
 
@@ -192,7 +225,7 @@ class _Capture(threading.Thread):
                     self.chunks += 1
                     if text:
                         self.transcribed += 1
-                        self.emit(Line(text=text, source=self.source, at=time.time()))
+                        self.emit(Line(text=text, source=self.source, at=captured_at))
                     # Audio with no words is NOT emitted. It used to send a
                     # "(sound, no speech - peak N dB)" note, which then got
                     # stitched into the word stream and matched against --
@@ -278,6 +311,7 @@ class Listener:
             "captures": [
                 {"source": c.source, "healthy": c.healthy, "error": c.error,
                  "silent_for": round(time.time() - c.last_signal, 1),
+                 "lag": round(c.lag, 2), "dropped": c.dropped,
                  "peak_db": round(c.peak_db, 1), "chunks": c.chunks,
                  "transcribed": c.transcribed, "device": c.device_label}
                 for c in self.captures

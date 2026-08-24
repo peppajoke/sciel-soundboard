@@ -748,8 +748,13 @@ function paintAuto(s) {
   caps0.forEach((c, i) => {
     const el = mb.children[i];
     if (!el) return;
-    el.querySelector('.nm').textContent = c.source;
-    el.title = c.device || '';
+    el.querySelector('.nm').textContent = c.source +
+      (c.dropped ? ' ⚠' : '');
+    el.title = (c.device || '') +
+      (c.lag != null ? `
+behind realtime: ${c.lag}s` : '') +
+      (c.dropped ? `
+dropped ${c.dropped} hop(s) to catch up` : '');
     // -60 dB floor: quiet room reads near zero, speech fills most of the bar.
     const pct = Math.max(0, Math.min(100, (c.peak_db + 60) / 60 * 100));
     el.querySelector('.fill').style.width = pct + '%';

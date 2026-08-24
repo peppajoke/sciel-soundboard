@@ -209,6 +209,20 @@ words — again, so a working listener never looks dead.
 the best score it got, including near-misses, so you can see *why* something
 didn't fire instead of guessing.
 
+### Never late
+
+A clip fires promptly or not at all. `max_fire_age_s` (2 s) is a hard deadline
+from *when the audio was captured* to when the clip plays; anything older is
+dropped with a "too late to fire" note. It is checked twice — before matching
+and again after the cooldown lookup — so a clip released by an expiring
+cooldown cannot fire on words from before it.
+
+The capture loop also watches how far behind realtime it is. If a scan takes
+longer than a hop the recorder queues audio, and every later transcript
+describes speech further in the past. Past `MAX_LAG_S` (1 s) the backlog is
+thrown away and capture resynchronises, which is visible as a ⚠ on the input
+meter.
+
 ### Restraints
 
 - **Budget** — default 10 auto-fires per 5 minutes. A chatty cutscene would

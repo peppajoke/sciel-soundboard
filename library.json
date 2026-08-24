@@ -35,8 +35,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787584940.1961744,
+      "plays": 2,
+      "last_played": 1787596406.1414967,
       "finished": true,
       "added_at": 1787538910.4869719
     },
@@ -45,7 +45,9 @@
       "name": "he died like a dog, he died like a coward",
       "file": "diedlikeadog-22be7e.wav",
       "triggers": [
-        "killed him"
+        "killed him",
+        "killed em",
+        "killed them"
       ],
       "tags": [],
       "threshold": null,
@@ -55,8 +57,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 5,
-      "last_played": 1787594954.7476807,
+      "plays": 6,
+      "last_played": 1787596438.8039148,
       "finished": true,
       "added_at": 1787538910.9074614
     },
@@ -333,8 +335,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 2,
+      "last_played": 1787596545.3702445,
       "finished": false,
       "added_at": 1787540856.1644106
     },
@@ -628,8 +630,8 @@
       "random_ok": false,
       "source": "wendy-williams-7927",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787585429.501904,
+      "plays": 4,
+      "last_played": 1787596513.9201806,
       "finished": true,
       "added_at": 1787540883.723038
     },
@@ -775,8 +777,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787593274.4029567,
+      "plays": 3,
+      "last_played": 1787596395.7147338,
       "finished": true,
       "added_at": 1787583155.8724594
     },
@@ -809,7 +811,8 @@
         "prepare for battle",
         "boss battle",
         "big battle",
-        "big fight"
+        "big fight",
+        "boss fight"
       ],
       "tags": [],
       "threshold": null,

@@ -67,6 +67,13 @@ DEFAULTS = {
         "stream_words": 20,
         "stream_gap_s": 10.0,
 
+        # Hard deadline from "this audio was captured" to "the clip plays".
+        # Anything older is dropped rather than fired: a soundbite landing
+        # long after the line that triggered it is worse than one that never
+        # lands. Covers every source of delay at once -- a decode backlog, a
+        # cooldown that expired late, a GPU stall.
+        "max_fire_age_s": 2.0,
+
         # Rate budget: at most `budget_count` auto-fires per `budget_window_s`.
         # Without this, a chatty cutscene can dump a dozen soundbites in a
         # minute and the joke dies. Manual presses are NOT counted -- the
