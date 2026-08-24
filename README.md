@@ -5,6 +5,23 @@ which feeds both Streamlabs and Discord. Auto mode transcribes game audio (or
 your mic) and fires a clip when what it hears is close enough to a clip's
 trigger phrase.
 
+## Cloning onto another machine
+
+The repo carries the clips, `library.json` and `config.json`, so a clone is a
+working soundboard, not just the code. Only the virtualenv is excluded (2.3 GB,
+machine-specific).
+
+```
+git clone <your-repo-url> soundboard
+cd soundboard
+powershell -ExecutionPolicy Bypass -File setup.ps1
+run.cmd
+```
+
+`setup.ps1` rebuilds the venv and warns if ffmpeg or VoiceMeeter are missing.
+Check **Settings -> Outputs** first: audio device names differ between machines
+and `config.json` carries this machine's choices.
+
 ## Run
 
 ```
