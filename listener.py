@@ -59,9 +59,6 @@ log = logging.getLogger("soundboard.listener")
 RATE = 16000          # whisper's native rate; the recorder resamples for us
 SILENCE_RMS = 1e-5    # below this is indistinguishable from digital silence
 SILENT_WARN_S = 45.0
-# Falling this far behind realtime means the backlog is discarded rather than
-# transcribed late.
-MAX_LAG_S = 1.0
 
 
 @dataclass
@@ -147,8 +144,7 @@ class _Capture(threading.Thread):
                  self.source, mic.name, self.chunk_s, self.hop_s)
         hop_frames = int(RATE * self.hop_s)
         window_frames = int(RATE * self.chunk_s)
-        started = time.time()
-        frames_read = 0
+        behind = 0
         # Rolling buffer: record a short hop, then transcribe the trailing
         # window. Detection latency becomes the hop rather than the window,
         # and phrases still get full context instead of being cut in half.
@@ -156,30 +152,36 @@ class _Capture(threading.Thread):
         try:
             with mic.recorder(samplerate=RATE, channels=1) as rec:
                 while not self.stop_flag.is_set():
+                    record_started = time.time()
                     data = rec.record(numframes=hop_frames)
                     chunk = np.asarray(data, dtype=np.float32).flatten()
-                    frames_read += len(chunk)
-
-                    # How far behind realtime are we? If a scan takes longer
-                    # than a hop the recorder queues audio, and every later
-                    # transcript describes speech from further in the past --
-                    # which is how a soundbite lands absurdly late.
+                    # Backlog check. Measured by how long record() BLOCKED:
+                    # when keeping up it waits roughly a hop for new audio,
+                    # and when behind it returns instantly with queued audio.
+                    #
+                    # It is NOT measured as drift from a fixed start time --
+                    # that counted the whisper model load as lag, started
+                    # above the threshold, and could never recover, because
+                    # reading audio only advances at realtime speed. The
+                    # catch-up loop then discarded every hop forever and the
+                    # listener went permanently deaf.
                     now = time.time()
-                    self.lag = (now - started) - (frames_read / RATE)
-                    if self.lag > MAX_LAG_S:
-                        # Throw the backlog away and resynchronise. A late
-                        # soundbite is worse than a missed one.
-                        skipped = 0
-                        while self.lag > 0.3 and skipped < 200:
-                            data = rec.record(numframes=hop_frames)
-                            frames_read += len(np.asarray(data).flatten())
-                            self.lag = (time.time() - started) - (frames_read / RATE)
-                            skipped += 1
-                        self.dropped += skipped
+                    blocked_for = now - record_started
+                    if blocked_for < self.hop_s * 0.4:
+                        behind += 1
+                    else:
+                        behind = 0
+                    if behind >= 4:
+                        # Sustained instant returns mean a real queue. Drop the
+                        # stale window once; do not loop reading, which cannot
+                        # catch up by definition.
                         buffer = np.zeros(0, dtype=np.float32)
-                        log.warning("[%s] fell %.1fs behind; dropped %d hop(s)",
-                                    self.source, self.lag + skipped * self.hop_s, skipped)
+                        self.dropped += 1
+                        behind = 0
+                        log.warning("[%s] capture fell behind; dropped the window",
+                                    self.source)
                         continue
+                    self.lag = round(max(0.0, self.hop_s - blocked_for), 3)
 
                     # Stamp with when this audio was CAPTURED, so downstream can
                     # refuse to fire on anything stale.

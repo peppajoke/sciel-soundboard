@@ -8,6 +8,10 @@
       {
         "device": null,
         "loopback": false
+      },
+      {
+        "device": "Line (2- USB AUDIO  CODEC)",
+        "loopback": false
       }
     ],
     "model": "small.en",
@@ -28,7 +32,7 @@
     "budget_count": 10,
     "budget_window_s": 300
   },
-  "auto_enabled": false,
+  "auto_enabled": true,
   "random": {
     "enabled": false,
     "min_minutes": 4.0,

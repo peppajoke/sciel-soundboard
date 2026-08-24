@@ -104,14 +104,18 @@
   .meter.dead .fill { background:var(--hot); }
   .meter .nm { width:104px; overflow:hidden; text-overflow:ellipsis;
                white-space:nowrap; }
-  /* One box showing the current rolling word stream. Fixed height so the
-     panel below never moves as words come and go. */
-  #stream { height:104px; overflow:hidden; padding:10px 11px; border-radius:8px;
+  /* The rolling word stream, read as ordinary running text.
+     Deliberately NOT: word-break:break-word (it splits words across lines,
+     which is what made this look chopped up), and not flex-centred (a growing
+     block that floats vertically is disorienting). Fixed height so the panel
+     below never moves. */
+  #stream { height:104px; overflow-y:auto; padding:10px 12px; border-radius:8px;
             background:var(--panel2); border:1px solid var(--line);
-            font-size:14px; line-height:1.5; word-break:break-word;
-            display:flex; align-items:center; }
-  #stream .quiet { color:var(--dim); font-style:italic; }
+            font-size:14px; line-height:1.55; }
+  #stream .quiet { color:var(--dim); }
   #stream .live { color:var(--text); transition:opacity .4s linear; }
+  #stream .who { color:var(--dim); font-size:11px; display:block;
+                 margin-bottom:2px; }
   #stream b { color:var(--good); }
   #lastFire { height:32px; margin-top:8px; font-size:12px; color:var(--dim);
               display:flex; align-items:center; gap:6px; }
@@ -933,15 +937,17 @@ function paintStream(s) {
     box.innerHTML = `<span class="quiet">${why}</span>`;
   } else {
     streams.sort((a, b) => a.age - b.age);
-    // Freshness is shown by fading the words as they age out, not by printing
-    // a number beside them -- a counter next to speech is noise, and the only
-    // thing worth conveying is "this is current" vs "this is going stale".
+    // Freshness fades the words as they age out; no numbers beside the text.
+    // The device label only appears when more than one input is being scanned,
+    // because with a single input it is just noise above every line.
     const gap = s.stream_gap_s || 10;
+    const many = streams.length > 1;
     box.innerHTML = streams.map(x => {
       const fade = Math.max(0.32, 1 - (x.age / gap) * 0.75);
-      return `<span class="live" style="opacity:${fade.toFixed(2)}">` +
-             `${escapeHtml(x.text)}</span>`;
-    }).join('<br>');
+      return (many ? `<span class="who">${escapeHtml(x.source)}</span>` : '') +
+             `<p class="live" style="opacity:${fade.toFixed(2)};margin:0 0 6px">` +
+             `${escapeHtml(x.text)}</p>`;
+    }).join('');
   }
 
   const lf = $('#lastFire');
