@@ -356,8 +356,16 @@ class Listener:
                 # Label is what shows in the transcript feed, so make it the
                 # thing you would recognise: the device name, not "input 3".
                 label = entry.get("label") or _label(device, loopback)
+                # The self-hear gate exists so a LOOPBACK capture does not
+                # transcribe the soundboard's own output and re-trigger it.
+                # Applying it to microphones muted the mic during every clip
+                # plus 2.5s after -- with clips firing steadily that silenced
+                # most of what was said ("it captures like 20% of my voice,
+                # goes dead randomly"). A mic does not hear the board's output
+                # directly; any speaker bleed is already covered by the
+                # cooldowns and the fired-mark.
                 cap = _Capture(label, device, loopback, self.model, chunk,
-                               self.emit, self.gate,
+                               self.emit, self.gate if loopback else None,
                                hop_s=float(self.cfg.get("hop_s", 0.75)),
                                prompt_fn=self.prompt_fn,
                                beam_size=int(self.cfg.get("beam_size", 5)))

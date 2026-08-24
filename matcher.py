@@ -147,6 +147,32 @@ class Match:
     score: float
 
 
+def find_all(line: str, clips, default_threshold: float = 0.82,
+             floor: float = 0.0) -> list[Match]:
+    """Every clip whose best trigger clears its threshold, best first.
+
+    The engine needs ALL of them, not just the winner: a clip that already
+    fired keeps scoring 1.0 for as long as its phrase stays in the rolling
+    window, and when only the single best match was considered it shadowed
+    every newly spoken trigger behind it -- "boss battle" sat plainly in the
+    stream while the engine kept reporting the stale "motherfucker" match as
+    already-fired and never looked further.
+    """
+    out: list[Match] = []
+    for clip in clips:
+        threshold = max(getattr(clip, "threshold", None) or default_threshold,
+                        floor)
+        best: Match | None = None
+        for phrase in getattr(clip, "triggers", ()):
+            s = score(line, phrase)
+            if s >= threshold and (best is None or s > best.score):
+                best = Match(clip.id, phrase, s)
+        if best:
+            out.append(best)
+    out.sort(key=lambda m: -m.score)
+    return out
+
+
 def find(line: str, clips, default_threshold: float = 0.82,
          floor: float = 0.0) -> Match | None:
     """Best-scoring clip whose trigger clears its threshold, or None.

@@ -234,10 +234,10 @@ class Engine:
             return
 
         candidates = self.library.auto_clips()
-        hit = matcher.find(text, candidates,
-                           float(listen.get("threshold", 0.82)), floor=floor)
+        hits = matcher.find_all(text, candidates,
+                                float(listen.get("threshold", 0.82)), floor=floor)
 
-        if not hit:
+        if not hits:
             # Record the best near-miss so thresholds can be tuned from the UI
             # rather than guessed at.
             best = 0.0
@@ -252,24 +252,31 @@ class Engine:
                         note=f"short line, needs {floor:.2f}" if short else None)
             return
 
+        # Walk EVERY clearing match, best first, and fire the first one that
+        # is not individually blocked. Considering only the single best match
+        # let a stale phrase shadow a new one: "motherfucker" (already fired,
+        # still scoring 1.0 while it sat in the window) was returned as the
+        # best match and blocked, so "prepare for battle" -- spoken verbatim,
+        # visible in the stream, clearly matching -- was never even evaluated.
         cooldown = self._cooldown("cooldown_s", 180.0)
-        with self._lock:
-            last = self._clip_last_fired.get(hit.clip_id, 0.0)
+        fired_set = self._fired_this_stream.get(STREAM_KEY, set())
+        held = None
+        hit = None
+        for cand in hits:
+            if cand.clip_id in fired_set:
+                held = held or f"already fired this line ({cand.score:.2f})"
+                continue
+            with self._lock:
+                last = self._clip_last_fired.get(cand.clip_id, 0.0)
             if now - last < cooldown:
-                self._event("heard", text, source=line.source, fired=None,
-                            note=f"clip cooldown ({hit.score:.2f})")
-                return
+                held = held or f"clip cooldown ({cand.score:.2f})"
+                continue
+            hit = cand
+            break
 
-        # One fire per clip per utterance. The matched words stay in the stream
-        # on purpose (see below), so the per-clip cooldown lifting is enough to
-        # fire the SAME phrase again: measured 5 fires off one "oh my god" in
-        # 26 s of continuous speech with "disable cooldowns" ticked, because
-        # the 5 s cap is shorter than the 10 s the words survive in the stream.
-        # Those repeats also dodge max_fire_age_s, which only ever sees the age
-        # of the newest chunk, never of the words that actually matched.
-        if hit.clip_id in self._fired_this_stream.get(STREAM_KEY, ()):
+        if hit is None:
             self._event("heard", text, source=line.source, fired=None,
-                        note=f"already fired this line ({hit.score:.2f})")
+                        note=held or "held")
             return
 
         age = time.time() - getattr(line, "at", now)
