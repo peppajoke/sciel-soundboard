@@ -146,7 +146,9 @@
       "file": "donotcome-2a2e45.wav",
       "triggers": [
         "should i come",
-        "i'm coming"
+        "i'm coming",
+        "i might come",
+        "i think i might come"
       ],
       "tags": [],
       "threshold": null,
@@ -156,8 +158,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787546593.8799963,
+      "plays": 2,
+      "last_played": 1787584560.75208,
       "finished": true,
       "added_at": 1787538912.7291157
     },
@@ -744,8 +746,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787584183.1035628,
+      "plays": 2,
+      "last_played": 1787584325.123117,
       "finished": true,
       "added_at": 1787583155.728109
     },
@@ -845,8 +847,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584094.771507,
+      "plays": 3,
+      "last_played": 1787584351.6563487,
       "finished": true,
       "added_at": 1787583157.4455473
     },
@@ -1009,8 +1011,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583562.098591,
+      "plays": 2,
+      "last_played": 1787584303.006301,
       "finished": true,
       "added_at": 1787583160.3952727
     },
@@ -1049,8 +1051,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584129.9423866,
+      "plays": 3,
+      "last_played": 1787584318.6894581,
       "finished": true,
       "added_at": 1787583160.662938
     },
@@ -1304,8 +1306,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583464.7288148,
+      "plays": 2,
+      "last_played": 1787584309.3342159,
       "finished": true,
       "added_at": 1787583173.4016266
     }
@@ -1315,61 +1317,61 @@
       "id": "wendy-williams-7927",
       "name": "Wendy Williams",
       "added_at": 1787542967.283909,
-      "image": null
+      "image": "wendy-williams-7927.png"
     },
     {
       "id": "tim-robinson-573a",
       "name": "Tim Robinson",
       "added_at": 1787542967.2839308,
-      "image": null
+      "image": "tim-robinson-573a.png"
     },
     {
       "id": "trump-a4b6",
       "name": "Trump",
       "added_at": 1787542967.2839427,
-      "image": null
+      "image": "trump-a4b6.png"
     },
     {
       "id": "dj-khaled-3180",
       "name": "DJ Khaled",
       "added_at": 1787542967.2839522,
-      "image": null
+      "image": "dj-khaled-3180.png"
     },
     {
       "id": "arrested-development-e80f",
       "name": "Arrested Development",
       "added_at": 1787542967.2839603,
-      "image": null
+      "image": "arrested-development-e80f.png"
     },
     {
       "id": "memes-sfx-1509",
       "name": "Memes & SFX",
       "added_at": 1787583153.2993712,
-      "image": null
+      "image": "memes-sfx-1509.png"
     },
     {
       "id": "spongebob-49e0",
       "name": "SpongeBob",
       "added_at": 1787583153.299382,
-      "image": null
+      "image": "spongebob-49e0.png"
     },
     {
       "id": "star-wars-de06",
       "name": "Star Wars",
       "added_at": 1787583153.299388,
-      "image": null
+      "image": "star-wars-de06.png"
     },
     {
       "id": "the-simpsons-1fe0",
       "name": "The Simpsons",
       "added_at": 1787583153.2993925,
-      "image": null
+      "image": "the-simpsons-1fe0.png"
     },
     {
       "id": "wwe-966f",
       "name": "WWE",
       "added_at": 1787583153.2993965,
-      "image": null
+      "image": "wwe-966f.png"
     }
   ]
 }

@@ -174,8 +174,11 @@
 
     <section>
       <h2>Settings</h2>
-      <label>Auto mode listens to — tick any number, each is scanned separately</label>
+      <label>Auto mode listens to</label>
       <div id="inputs"></div>
+      <button id="advBtn" style="margin-top:6px;padding:5px 9px;font-size:12px">
+        See advanced</button>
+      <div id="inputsAdv" style="display:none"></div>
       <label>Match threshold <span id="thVal" class="pill"></span></label>
       <input id="threshold" type="range" min="0.5" max="1" step="0.01" style="width:100%">
       <label>Budget — most auto-fires allowed per window</label>
@@ -779,35 +782,46 @@ async function loadCfg() {
       ? name === DEFAULT_LABEL(loop)
       : name.toLowerCase().includes(String(i.device).toLowerCase())));
 
-  const addInput = (name, loop, label) => {
+  const addInput = (name, loop, label, box) => {
     const id = 'in_' + (loop ? 'L' : 'M') + name.replace(/\W/g, '');
-    inBox.insertAdjacentHTML('beforeend',
+    (box || inBox).insertAdjacentHTML('beforeend',
       `<div class="row"><input type="checkbox" id="${id}" class="inp"
          data-name="${escapeHtml(name)}" data-loop="${loop ? 1 : 0}"
          ${isOn(name, loop) ? 'checked' : ''}>
        <label for="${id}" style="margin:0;color:var(--text)">${escapeHtml(label)}</label></div>`);
   };
 
-  const heading = t => inBox.insertAdjacentHTML('beforeend',
+  // The two defaults are all anyone normally needs, and they follow whatever
+  // Windows is set to -- so they keep working when a headset is unplugged.
+  // Named devices live behind "See advanced" to keep this panel short.
+  addInput(DEFAULT_LABEL(true), true, 'Desktop audio (game, music, Discord)');
+  addInput(DEFAULT_LABEL(false), false, 'My microphone');
+
+  const advBox = $('#inputsAdv');
+  advBox.innerHTML = '';
+  const advHeading = t => advBox.insertAdjacentHTML('beforeend',
     `<div style="color:var(--dim);font-size:11px;text-transform:uppercase;
       letter-spacing:.06em;margin:10px 0 4px">${t}</div>`);
 
-  heading('Desktop audio');
-  addInput(DEFAULT_LABEL(true), true, 'Desktop audio (follows default output)');
+  advHeading('Specific outputs (what they play)');
   const seenIn = new Set();
   for (const d of devs.outputs) {
     if (seenIn.has('L' + d.name)) continue;
     seenIn.add('L' + d.name);
-    addInput(d.name, true, d.name);
+    addInput(d.name, true, d.name, advBox);
   }
-
-  heading('Microphones');
-  addInput(DEFAULT_LABEL(false), false, 'Default microphone');
+  advHeading('Specific microphones');
   for (const d of devs.inputs) {
     if (seenIn.has(d.name)) continue;
     seenIn.add(d.name);
-    addInput(d.name, false, d.name);
+    addInput(d.name, false, d.name, advBox);
   }
+
+  // Open the advanced list automatically if a named device is already in use,
+  // otherwise the panel would hide a setting that is actually in effect.
+  const usingNamed = chosen.some(i => i.device);
+  $('#inputsAdv').style.display = usingNamed ? 'block' : 'none';
+  $('#advBtn').textContent = usingNamed ? 'Hide advanced' : 'See advanced';
 
   const seen = new Set(), box = $('#outputs');
   // (cfgReady is set at the end of this function, once every control exists)
@@ -886,6 +900,13 @@ function saveSettings() {
 document.querySelector('aside').addEventListener('change', e => {
   if (e.target.closest('section') && e.target.id !== 'file') saveSettings();
 });
+$('#advBtn').onclick = () => {
+  const adv = $('#inputsAdv');
+  const open = adv.style.display === 'none';
+  adv.style.display = open ? 'block' : 'none';
+  $('#advBtn').textContent = open ? 'Hide advanced' : 'See advanced';
+};
+
 $('#threshold').oninput = e => {
   $('#thVal').textContent = e.target.value;
   saveSettings();

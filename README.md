@@ -72,12 +72,11 @@ Settings lists every capture device as a checkbox, the same way outputs work.
 Tick as many as you like — **each is scanned independently**, so you can run
 your mic and the game at once, or several mics.
 
-Two kinds appear in the list:
-
-- **Microphones** — what a device *hears*. Pick the specific one (e.g. the
-  NVIDIA Broadcast mic) rather than relying on the Windows default.
-- **`[what it plays]`** — a loopback capture of an *output*, which is how game
-  audio gets scanned. "System audio (game)" follows the default output.
+Two boxes by default — **Desktop audio** and **My microphone** — which follow
+whatever Windows is set to, so they keep working when a headset is unplugged.
+**See advanced** reveals every individual device, both microphones and outputs
+(captured as loopback). The advanced list opens automatically if a named device
+is already selected, so a setting in force is never hidden.
 
 Each capture is labelled by device name in the transcript feed, so you can tell
 which one heard what.
@@ -232,7 +231,21 @@ noise, not comedy, so there is deliberately **no setting to turn this off** —
 the mixer holds at most one voice per device by construction. Any trim preview
 also stops the moment a real clip fires.
 
-## Latency
+## Detection latency (auto mode)
+
+Whisper transcribes a 3 s window in about 5 ms and matching 70 clips takes
+4 ms, so **neither is the bottleneck** — the capture window is. Waiting for a
+fresh 3 s buffer meant a phrase could sit unexamined for up to 3 seconds.
+
+The listener now keeps a **rolling window**: it records a short `hop_s`
+(default 0.75 s), then re-scans the trailing `chunk_s` (3 s). Detection latency
+becomes the hop rather than the window, while phrases keep their full context.
+The extra transcription is effectively free at these sizes.
+
+Shorten `hop_s` for faster reaction; the per-clip and global cooldowns already
+stop the overlapping windows from firing the same clip twice.
+
+## Playback latency
 
 Click-to-sound is roughly **25 ms**, which is below the threshold where a press
 feels delayed. It breaks down as ~22 ms output stream + ~2 ms HTTP + <0.1 ms to

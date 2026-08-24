@@ -27,7 +27,15 @@ DEFAULTS = {
         "model": "small.en",     # faster-whisper model
         "compute_type": "float16",
         "device": "cuda",        # falls back to CPU automatically if CUDA is absent
-        "chunk_s": 3.0,          # audio window handed to whisper
+        # Window handed to whisper. Kept long enough to hold a whole phrase --
+        # short windows split words and wreck matching.
+        "chunk_s": 3.0,
+        # How often that window is re-scanned. THIS is the detection latency:
+        # with a 3 s window and no hop, a phrase waits up to 3 s just for the
+        # buffer to fill. Re-scanning a rolling window every 0.75 s cuts the
+        # wait to about that, while keeping the full window of context.
+        # Transcription costs a few ms, so the extra work is free here.
+        "hop_s": 0.75,
         "threshold": 0.82,       # default fuzzy-match score to fire
         # Per-clip cooldown, applied to EVERY automatic path (trigger matches
         # and random drops alike). A soundbite lands once and then rests --

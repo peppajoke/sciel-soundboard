@@ -73,13 +73,15 @@ class _Capture(threading.Thread):
 
     daemon = True
 
-    def __init__(self, source, device_name, loopback, model, chunk_s, emit, gate=None):
+    def __init__(self, source, device_name, loopback, model, chunk_s, emit,
+                 gate=None, hop_s=0.75):
         super().__init__(name=f"listen-{source}")
         self.source = source
         self.device_name = device_name
         self.loopback = loopback
         self.model = model
         self.chunk_s = chunk_s
+        self.hop_s = min(hop_s, chunk_s)
         self.emit = emit
         # gate() -> True means "drop this chunk". Stops the loopback listener
         # transcribing the soundboard's own output and re-triggering itself,
@@ -131,16 +133,24 @@ class _Capture(threading.Thread):
             return
 
         self.device_label = mic.name
-        log.info("[%s] listening on %s", self.source, mic.name)
-        frames = int(RATE * self.chunk_s)
+        log.info("[%s] listening on %s (window %.1fs, hop %.2fs)",
+                 self.source, mic.name, self.chunk_s, self.hop_s)
+        hop_frames = int(RATE * self.hop_s)
+        window_frames = int(RATE * self.chunk_s)
+        # Rolling buffer: record a short hop, then transcribe the trailing
+        # window. Detection latency becomes the hop rather than the window,
+        # and phrases still get full context instead of being cut in half.
+        buffer = np.zeros(0, dtype=np.float32)
         try:
             with mic.recorder(samplerate=RATE, channels=1) as rec:
                 while not self.stop_flag.is_set():
-                    data = rec.record(numframes=frames)
-                    audio = np.asarray(data, dtype=np.float32).flatten()
+                    data = rec.record(numframes=hop_frames)
+                    chunk = np.asarray(data, dtype=np.float32).flatten()
+                    buffer = np.concatenate([buffer, chunk])[-window_frames:]
+                    audio = buffer
 
-                    rms = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
-                    peak = float(np.abs(audio).max()) if audio.size else 0.0
+                    rms = float(np.sqrt(np.mean(chunk ** 2))) if chunk.size else 0.0
+                    peak = float(np.abs(chunk).max()) if chunk.size else 0.0
                     self.peak_db = (20 * np.log10(peak)) if peak > 1e-6 else -120.0
                     now = time.time()
                     if rms > SILENCE_RMS:
@@ -160,6 +170,7 @@ class _Capture(threading.Thread):
                     if rms <= SILENCE_RMS:
                         continue
                     if self.gate and self.gate():
+                        buffer = np.zeros(0, dtype=np.float32)
                         continue
 
                     try:
@@ -242,7 +253,8 @@ class Listener:
             # you would recognise: the device name, not "input 3".
             label = entry.get("label") or _label(device, loopback)
             cap = _Capture(label, device, loopback, self.model, chunk,
-                           self.emit, self.gate)
+                           self.emit, self.gate,
+                           hop_s=float(self.cfg.get("hop_s", 0.75)))
             cap.start()
             self.captures.append(cap)
 
