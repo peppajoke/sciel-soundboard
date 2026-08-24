@@ -271,8 +271,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787543467.5470245,
+      "plays": 3,
+      "last_played": 1787583425.8494802,
       "finished": true,
       "added_at": 1787540854.9519262
     },
@@ -386,8 +386,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583428.8434381,
       "finished": true,
       "added_at": 1787540857.7803633
     },
@@ -467,8 +467,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583393.1786094,
       "finished": true,
       "added_at": 1787540880.1101837
     },
@@ -751,8 +751,7 @@
       "name": "Ain't nobody got time for that",
       "file": "ain-t-nobody-got-time-for-that-73e210.wav",
       "triggers": [
-        "ain't nobody got time for that",
-        "nobody got time for that"
+        "do you have time"
       ],
       "tags": [],
       "threshold": null,
@@ -762,8 +761,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583382.2546465,
       "finished": true,
       "added_at": 1787583155.8724594
     },
@@ -819,8 +818,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583430.828717,
       "finished": true,
       "added_at": 1787583157.264055
     },
@@ -888,9 +887,7 @@
       "name": "As a child I yearned for the mines",
       "file": "as-a-child-i-yearned-for-the-mines-f19145.wav",
       "triggers": [
-        "as a child i yearned for the mines",
-        "yearned for the mines",
-        "to the mines"
+        "for the mines"
       ],
       "tags": [],
       "threshold": null,
@@ -1006,7 +1003,9 @@
       "id": "fahh-very-loud-2fcd14",
       "name": "Fahh (very loud)",
       "file": "fahh-very-loud-2fcd14.wav",
-      "triggers": [],
+      "triggers": [
+        "fuck fuck fuck"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 1.927,
@@ -1015,8 +1014,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583433.7435863,
       "finished": true,
       "added_at": 1787583160.5265596
     },
@@ -1214,8 +1213,7 @@
       "name": "And his name is John Cena",
       "file": "and-his-name-is-john-cena-612452.wav",
       "triggers": [
-        "and his name is john cena",
-        "his name is john cena"
+        "john cena"
       ],
       "tags": [],
       "threshold": null,
@@ -1225,8 +1223,8 @@
       "random_ok": false,
       "source": "wwe-966f",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583395.9804451,
       "finished": true,
       "added_at": 1787583163.2825134
     },

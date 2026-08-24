@@ -14,13 +14,20 @@ machine-specific).
 ```
 git clone <your-repo-url> soundboard
 cd soundboard
-powershell -ExecutionPolicy Bypass -File setup.ps1
-run.cmd
+powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-`setup.ps1` rebuilds the venv and warns if ffmpeg or VoiceMeeter are missing.
+`install.ps1` installs anything missing (Python, ffmpeg — via winget), builds
+the virtualenv, self-tests the imports, and puts a **Soundboard** shortcut on
+the Desktop and in the Start Menu. It is safe to re-run, so it doubles as a
+repair command. Add `-WithVoicemeeter` to install VoiceMeeter too (only needed
+to route clips into Discord).
+
+Then start it from the shortcut, or `run.cmd` — which opens the browser for
+you.
+
 Check **Settings -> Outputs** first: audio device names differ between machines
-and `config.json` carries this machine's choices.
+and the committed `config.json` holds the previous machine's choices.
 
 ## Run
 
