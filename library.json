@@ -57,8 +57,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 8,
-      "last_played": 1787609763.5610616,
+      "plays": 9,
+      "last_played": 1787611620.6353002,
       "finished": true,
       "added_at": 1787538910.9074614
     },
@@ -98,8 +98,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584648.3279908,
+      "plays": 3,
+      "last_played": 1787611610.9811265,
       "finished": true,
       "added_at": 1787538911.646987
     },
@@ -138,8 +138,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 7,
-      "last_played": 1787610169.244863,
+      "plays": 8,
+      "last_played": 1787611624.848029,
       "finished": true,
       "added_at": 1787538912.4115906
     },
@@ -416,8 +416,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787611383.6024845,
+      "plays": 5,
+      "last_played": 1787611537.6143844,
       "finished": true,
       "added_at": 1787540858.1052797
     },
@@ -456,8 +456,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 8,
-      "last_played": 1787610815.4826539,
+      "plays": 9,
+      "last_played": 1787611530.837003,
       "finished": true,
       "added_at": 1787540858.6738067
     },
@@ -887,8 +887,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 8,
-      "last_played": 1787610715.771714,
+      "plays": 9,
+      "last_played": 1787611568.2414608,
       "finished": true,
       "added_at": 1787583157.5824702
     },
@@ -949,8 +949,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 7,
-      "last_played": 1787611457.6892133,
+      "plays": 9,
+      "last_played": 1787611589.2132564,
       "finished": true,
       "added_at": 1787583159.5519447
     },
@@ -969,8 +969,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787610162.8567238,
+      "plays": 2,
+      "last_played": 1787611608.3585396,
       "finished": true,
       "added_at": 1787583159.6695144
     },
@@ -990,8 +990,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787611184.2175612,
+      "plays": 3,
+      "last_played": 1787611616.2463872,
       "finished": true,
       "added_at": 1787583159.9985747
     },
@@ -1031,8 +1031,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584303.006301,
+      "plays": 3,
+      "last_played": 1787611613.64916,
       "finished": true,
       "added_at": 1787583160.3952727
     },
@@ -1061,7 +1061,9 @@
       "name": "Nice cock",
       "file": "nice-cock-557431.wav",
       "triggers": [
-        "nice cock"
+        "nice cock",
+        "nice dick",
+        "nice penis"
       ],
       "tags": [],
       "threshold": null,
@@ -1071,8 +1073,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787593649.210426,
+      "plays": 5,
+      "last_played": 1787611584.1964083,
       "finished": true,
       "added_at": 1787583160.662938
     },
@@ -1187,8 +1189,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787601619.4924715,
+      "plays": 5,
+      "last_played": 1787611602.2466981,
       "finished": true,
       "added_at": 1787583162.4381247
     },
@@ -1328,8 +1330,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 9,
-      "last_played": 1787611431.930181,
+      "plays": 10,
+      "last_played": 1787611605.7353354,
       "finished": true,
       "added_at": 1787583173.4016266
     }

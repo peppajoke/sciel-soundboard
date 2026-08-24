@@ -140,6 +140,40 @@ def stitch(tail: list[str], new: list[str], max_words: int = 60) -> list[str]:
     return (tail + new)[-max_words:]
 
 
+def snap(words: list[str], vocab: set[str]) -> list[str]:
+    """Snap near-miss words onto the trigger-bank vocabulary.
+
+    Whisper mangles individual words constantly -- "batter" for "battle",
+    "dool" for "duel" -- and a one-word mangle inside a short trigger can drag
+    the phrase score under the threshold. We know exactly which words matter
+    (the ones appearing in triggers), so a word that is not in the bank but is
+    very close to one bank word is treated AS that word for matching.
+
+    Guards against false snaps: only words of 4+ characters, the candidate
+    must share the first TWO letters (whisper's errors cluster at word
+    endings, and this is what separates batter->battle, which we want, from
+    bottle->battle and cattle->battle, which would rewrite real words),
+    length within 2, and similarity >= 0.82 (tough->touch sits at
+    exactly 0.80 and must not snap). Ties keep the original word.
+    """
+    if not vocab:
+        return words
+    out = []
+    for w in words:
+        if w in vocab or len(w) < 4:
+            out.append(w)
+            continue
+        best, best_r = None, 0.0
+        for v in vocab:
+            if v[:2] != w[:2] or abs(len(v) - len(w)) > 2:
+                continue
+            r = _ratio(w, v)
+            if r >= 0.82 and r > best_r:
+                best, best_r = v, r
+        out.append(best or w)
+    return out
+
+
 @dataclass(frozen=True)
 class Match:
     clip_id: str

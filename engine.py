@@ -177,7 +177,15 @@ class Engine:
         stitched = matcher.stitch(prev_words, words, max_words=keep)
         self._stream[STREAM_KEY] = (stitched, now)
 
-        text = " ".join(stitched)
+        # Matching runs on a vocabulary-snapped view: words whisper mangled
+        # by a letter or two are pulled onto the trigger bank ("batter" ->
+        # "battle"), so a one-word mishear cannot sink a whole phrase. The
+        # DISPLAY stream stays raw -- what you said, as heard -- while events
+        # record the snapped text, which is what the matcher actually saw.
+        candidates = self.library.auto_clips()
+        vocab = {w for c in candidates for t in c.triggers
+                 for w in matcher.normalize(t)}
+        text = " ".join(matcher.snap(stitched, vocab))
 
         # Un-mark fired clips whose trigger has scrolled OUT of the window.
         # The mark used to clear only on a 10s silence gap -- but on a stream
@@ -233,7 +241,6 @@ class Engine:
                         note=f"too late to fire ({age:.1f}s old)")
             return
 
-        candidates = self.library.auto_clips()
         hits = matcher.find_all(text, candidates,
                                 float(listen.get("threshold", 0.82)), floor=floor)
 
@@ -308,15 +315,17 @@ class Engine:
     def trigger_prompt(self) -> str:
         """Trigger phrases as a whisper decoding prompt.
 
-        Capped because whisper only accepts a prompt of a couple of hundred
-        tokens; the longest triggers are the most distinctive, so they win the
-        space when there are more phrases than fit.
+        Capped at whisper's usable prompt budget. Measured on the known-clip
+        eval with the live greedy settings: cap 250 scored 0.956, cap 1200
+        scored 0.993, both ~120 ms/clip -- a bigger prompt is free accuracy,
+        and the earlier tighter cap (added chasing decode time) was costing
+        recognition for no speed gain. Longest triggers win the space.
         """
         phrases = sorted({t for c in self.library.auto_clips() for t in c.triggers},
                          key=len, reverse=True)
         out, total = [], 0
         for phrase in phrases:
-            if total + len(phrase) > 250:
+            if total + len(phrase) > 1200:
                 break
             out.append(phrase)
             total += len(phrase) + 2
