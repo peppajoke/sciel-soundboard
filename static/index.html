@@ -972,6 +972,12 @@ async function pollFeed() {
     }
   } catch {}
 }
+// Sentinel names for "whatever Windows is defaulting to", stored as device:null.
+// Defined here rather than beside loadCfg because it once lived inside the
+// event-feed block and was deleted with it, which silently emptied the whole
+// device picker: loadCfg threw, so no inputs or outputs rendered and settings
+// auto-save never armed.
+const DEFAULT_LABEL = loop => loop ? '__default_output__' : '__default_input__';
 const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 // ---------- settings ----------

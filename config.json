@@ -28,7 +28,7 @@
     "budget_count": 10,
     "budget_window_s": 300
   },
-  "auto_enabled": true,
+  "auto_enabled": false,
   "random": {
     "enabled": false,
     "min_minutes": 4.0,
@@ -37,6 +37,5 @@
   },
   "nas_inbox": "//192.168.1.169/media/soundboard/inbox",
   "nas_poll_s": 20,
-  "port": 8770,
-  "allow_overlap": false
+  "port": 8770
 }

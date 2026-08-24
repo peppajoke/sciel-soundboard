@@ -119,8 +119,17 @@ def _merge(base: dict, over: dict) -> dict:
     return out
 
 
+# Keys that used to exist and no longer do. They are stripped on load, because
+# _merge preserves whatever is in the stored file: a dead setting would sit in
+# config.json forever, looking like something you could still change.
+RETIRED_KEYS = ("allow_overlap",)
+
+
 def _migrate(cfg: dict) -> dict:
     """Convert the old single-source listen config into the inputs list."""
+    for key in RETIRED_KEYS:
+        cfg.pop(key, None)
+
     listen = cfg.get("listen", {})
     if "inputs" in listen and listen["inputs"] is not None:
         return cfg
