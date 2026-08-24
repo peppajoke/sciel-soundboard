@@ -6,10 +6,6 @@
   "listen": {
     "inputs": [
       {
-        "device": null,
-        "loopback": false
-      },
-      {
         "device": "Line (2- USB AUDIO  CODEC)",
         "loopback": false
       }
@@ -20,6 +16,7 @@
     "chunk_s": 3.0,
     "hop_s": 0.75,
     "beam_size": 5,
+    "speech_gate_db": -45.0,
     "threshold": 0.82,
     "cooldown_s": 180.0,
     "global_cooldown_s": 2.0,

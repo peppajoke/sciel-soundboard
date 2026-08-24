@@ -35,8 +35,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787599885.838618,
+      "plays": 4,
+      "last_played": 1787610080.2194672,
       "finished": true,
       "added_at": 1787538910.4869719
     },
@@ -57,8 +57,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787596438.8039148,
+      "plays": 8,
+      "last_played": 1787609763.5610616,
       "finished": true,
       "added_at": 1787538910.9074614
     },
@@ -77,8 +77,8 @@
       "random_ok": false,
       "source": "dj-khaled-3180",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787595121.8256955,
+      "plays": 4,
+      "last_played": 1787610393.1346295,
       "finished": true,
       "added_at": 1787538911.38667
     },
@@ -137,8 +137,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787596338.1615698,
+      "plays": 7,
+      "last_played": 1787610169.244863,
       "finished": true,
       "added_at": 1787538912.4115906
     },
@@ -160,8 +160,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787593827.7277083,
+      "plays": 5,
+      "last_played": 1787609991.4413238,
       "finished": true,
       "added_at": 1787538912.7291157
     },
@@ -258,8 +258,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787594108.2858896,
+      "plays": 3,
+      "last_played": 1787610208.3741481,
       "finished": true,
       "added_at": 1787540854.6033146
     },
@@ -394,8 +394,8 @@
       "random_ok": false,
       "source": "wendy-williams-7927",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787600022.4664981,
+      "plays": 4,
+      "last_played": 1787609882.740466,
       "finished": true,
       "added_at": 1787540857.7803633
     },
@@ -415,8 +415,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787585436.8338,
+      "plays": 3,
+      "last_played": 1787610277.0168803,
       "finished": true,
       "added_at": 1787540858.1052797
     },
@@ -436,8 +436,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787593609.8453515,
+      "plays": 2,
+      "last_played": 1787610268.3583784,
       "finished": true,
       "added_at": 1787540858.3997014
     },
@@ -456,8 +456,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 5,
-      "last_played": 1787599898.726788,
+      "plays": 7,
+      "last_played": 1787610566.3251886,
       "finished": true,
       "added_at": 1787540858.6738067
     },
@@ -496,8 +496,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787600061.736177,
+      "plays": 4,
+      "last_played": 1787610377.0966618,
       "finished": true,
       "added_at": 1787540880.4707851
     },
@@ -713,8 +713,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787610253.946224,
       "finished": true,
       "added_at": 1787540885.0611176
     },
@@ -734,8 +734,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787594378.8052964,
+      "plays": 3,
+      "last_played": 1787610422.9214988,
       "finished": true,
       "added_at": 1787540885.3599749
     },
@@ -822,8 +822,8 @@
       "random_ok": false,
       "source": "star-wars-de06",
       "gain": 1.0,
-      "plays": 5,
-      "last_played": 1787595220.2358289,
+      "plays": 6,
+      "last_played": 1787609769.876824,
       "finished": true,
       "added_at": 1787583157.1275167
     },
@@ -863,8 +863,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 6,
-      "last_played": 1787595166.7319899,
+      "plays": 7,
+      "last_played": 1787610144.0250566,
       "finished": true,
       "added_at": 1787583157.4455473
     },
@@ -873,7 +873,9 @@
       "name": "Taco Bell bong",
       "file": "taco-bell-bong-f724d4.wav",
       "triggers": [
-        "taco bell"
+        "taco bell",
+        "taco",
+        "outside the bun"
       ],
       "tags": [],
       "threshold": null,
@@ -883,8 +885,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787584093.333183,
+      "plays": 7,
+      "last_played": 1787609938.3688297,
       "finished": true,
       "added_at": 1787583157.5824702
     },
@@ -945,8 +947,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787584862.6878185,
+      "plays": 4,
+      "last_played": 1787609735.8683589,
       "finished": true,
       "added_at": 1787583159.5519447
     },
@@ -965,8 +967,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787610162.8567238,
       "finished": true,
       "added_at": 1787583159.6695144
     },
@@ -1047,8 +1049,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787594745.8989484,
+      "plays": 6,
+      "last_played": 1787610203.3717537,
       "finished": true,
       "added_at": 1787583160.5265596
     },
@@ -1250,7 +1252,8 @@
       "name": "And his name is John Cena",
       "file": "and-his-name-is-john-cena-612452.wav",
       "triggers": [
-        "john cena"
+        "john cena",
+        "and his name is"
       ],
       "tags": [],
       "threshold": null,
@@ -1260,8 +1263,8 @@
       "random_ok": false,
       "source": "wwe-966f",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787583724.7564516,
+      "plays": 3,
+      "last_played": 1787610462.472544,
       "finished": true,
       "added_at": 1787583163.2825134
     },
@@ -1281,8 +1284,8 @@
       "random_ok": false,
       "source": "the-simpsons-1fe0",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787594647.061335,
+      "plays": 6,
+      "last_played": 1787609836.173302,
       "finished": true,
       "added_at": 1787583163.4358501
     },
@@ -1322,8 +1325,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787584828.1823666,
+      "plays": 6,
+      "last_played": 1787610492.4759119,
       "finished": true,
       "added_at": 1787583173.4016266
     }

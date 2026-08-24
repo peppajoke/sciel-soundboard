@@ -74,7 +74,8 @@ class _Capture(threading.Thread):
     daemon = True
 
     def __init__(self, source, device_name, loopback, model, chunk_s, emit,
-                 gate=None, hop_s=0.75, prompt_fn=None, beam_size=5):
+                 gate=None, hop_s=0.75, prompt_fn=None, beam_size=5,
+                 speech_gate_db=-45.0):
         super().__init__(name=f"listen-{source}")
         self.source = source
         self.device_name = device_name
@@ -92,6 +93,9 @@ class _Capture(threading.Thread):
         # eval -- the same gain as jumping to medium.en, at no latency cost.
         self.prompt_fn = prompt_fn
         self.beam_size = beam_size
+        # Quieter than this (window peak, dBFS) is not worth decoding. Sits
+        # between a typical analog noise floor (~-47) and quiet speech (~-30).
+        self.speech_gate_db = float(speech_gate_db)
         self.stop_flag = threading.Event()
         self.last_signal = time.time()
         self.healthy = True
@@ -172,14 +176,29 @@ class _Capture(threading.Thread):
                     else:
                         behind = 0
                     if behind >= 4:
-                        # Sustained instant returns mean a real queue. Drop the
-                        # stale window once; do not loop reading, which cannot
-                        # catch up by definition.
+                        # Sustained instant returns mean a real queue. Clearing
+                        # our buffer alone did NOT fix this: the backlog lives
+                        # in soundcard's queue, so record() kept returning
+                        # instantly, we re-detected "behind" every 4 hops, and
+                        # the lag never shrank -- transcripts arrived 8s stale
+                        # and the fire deadline rejected everything, which
+                        # presented as "speech does not show up". Draining
+                        # means READING the queued frames (fast, no transcribe)
+                        # until a read blocks like live audio again. Unlike the
+                        # old fixed-start-time approach this converges, because
+                        # the queue is finite.
+                        drained = 0
+                        while drained < 200 and not self.stop_flag.is_set():
+                            t0 = time.time()
+                            rec.record(numframes=hop_frames)
+                            drained += 1
+                            if time.time() - t0 >= self.hop_s * 0.4:
+                                break        # blocked for real: caught up
                         buffer = np.zeros(0, dtype=np.float32)
                         self.dropped += 1
                         behind = 0
-                        log.warning("[%s] capture fell behind; dropped the window",
-                                    self.source)
+                        log.warning("[%s] fell behind; drained %d queued hop(s)",
+                                    self.source, drained)
                         continue
                     self.lag = round(max(0.0, self.hop_s - blocked_for), 3)
 
@@ -219,6 +238,19 @@ class _Capture(threading.Thread):
                         continue
                     if self.gate and self.gate():
                         buffer = np.zeros(0, dtype=np.float32)
+                        continue
+
+                    # Speech gate on the WINDOW peak. The old floor (-100 dB)
+                    # only rejected digital silence, so a -47 dB analog noise
+                    # floor ran whisper every hop, all day: 9732 chunks
+                    # transcribed for 74 with words, and the constant decode
+                    # load is what pushed capture behind realtime. The window
+                    # (not the hop) is tested so scanning continues for the
+                    # ~3s tail after speech stops and the last words still get
+                    # their full-context pass.
+                    window_peak = float(np.abs(audio).max()) if audio.size else 0.0
+                    window_db = (20 * np.log10(window_peak)) if window_peak > 1e-6 else -120.0
+                    if window_db < self.speech_gate_db:
                         continue
 
                     try:

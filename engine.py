@@ -29,6 +29,9 @@ log = logging.getLogger("soundboard.engine")
 # window, so the tail of the clip is still inside the next chunk.
 SELF_HEAR_GUARD_S = 2.5
 
+# The single key under which all captures' words merge. See on_line().
+STREAM_KEY = "mix"
+
 # What every cooldown collapses to when "disable cooldowns" is ticked. Low
 # enough to feel off, high enough that overlapping scan windows cannot fire
 # the same clip repeatedly off a single phrase.
@@ -161,15 +164,39 @@ class Engine:
         gap = float(listen.get("stream_gap_s", 10.0))
         keep = int(listen.get("stream_words", 20))
 
-        prev_words, last_seen = self._stream.get(line.source, ([], 0.0))
+        # ONE stream regardless of how many inputs are configured. Keying by
+        # line.source meant two mics hearing the same speech built two streams,
+        # each displayed AND matched separately -- the same phrase fired the
+        # same clip twice and the transcript showed it twice. The stitcher's
+        # fuzzy overlap absorbs the second mic's near-identical re-decode.
+        prev_words, last_seen = self._stream.get(STREAM_KEY, ([], 0.0))
         if now - last_seen > gap:
             prev_words = []
             # New utterance: whatever fired off the old one may fire again.
-            self._fired_this_stream.pop(line.source, None)
+            self._fired_this_stream.pop(STREAM_KEY, None)
         stitched = matcher.stitch(prev_words, words, max_words=keep)
-        self._stream[line.source] = (stitched, now)
+        self._stream[STREAM_KEY] = (stitched, now)
 
         text = " ".join(stitched)
+
+        # Un-mark fired clips whose trigger has scrolled OUT of the window.
+        # The mark used to clear only on a 10s silence gap -- but on a stream
+        # you never stop talking for 10s, so a clip that fired once was locked
+        # for the rest of the monologue and read as "cooldown" with cooldowns
+        # disabled. Once no trigger of a marked clip matches the current
+        # window, the words that fired it are gone: saying the phrase AGAIN is
+        # a new event and may fire. While the phrase is still visible in the
+        # window the mark holds, which is the machine-gun protection.
+        fired = self._fired_this_stream.get(STREAM_KEY)
+        if fired:
+            thr = float(listen.get("threshold", 0.82))
+            for clip_id in list(fired):
+                clip = self.library.clips.get(clip_id)
+                if clip is None or not any(
+                        matcher.score(text, t) >= min(thr,
+                            clip.threshold or thr)
+                        for t in clip.triggers):
+                    fired.discard(clip_id)
 
         # The floor applies to the SEQUENCE, not one emission: a phrase that
         # has only produced one word so far is still genuinely short.
@@ -240,7 +267,7 @@ class Engine:
         # the 5 s cap is shorter than the 10 s the words survive in the stream.
         # Those repeats also dodge max_fire_age_s, which only ever sees the age
         # of the newest chunk, never of the words that actually matched.
-        if hit.clip_id in self._fired_this_stream.get(line.source, ()):
+        if hit.clip_id in self._fired_this_stream.get(STREAM_KEY, ()):
             self._event("heard", text, source=line.source, fired=None,
                         note=f"already fired this line ({hit.score:.2f})")
             return
@@ -264,7 +291,7 @@ class Engine:
                     best=round(hit.score, 3), phrase=hit.phrase)
         try:
             self.play(hit.clip_id, why=f"auto:{hit.phrase} ({hit.score:.2f})")
-            self._fired_this_stream.setdefault(line.source, set()).add(hit.clip_id)
+            self._fired_this_stream.setdefault(STREAM_KEY, set()).add(hit.clip_id)
             with self._lock:
                 self._auto_fires.append(time.time())
         except Exception as exc:
@@ -298,8 +325,16 @@ class Engine:
         return value
 
     def _budget_allows(self, now: float) -> bool:
-        """True if the shared auto/random fire budget has room left."""
+        """True if the shared auto/random fire budget has room left.
+
+        "Disable cooldowns" bypasses the budget as well. The toggle means
+        "stop restraining me"; during trigger testing the 10-per-5-min budget
+        was exhausted within minutes and every subsequent match was silently
+        held, which read as the app ignoring perfectly-parsed speech.
+        """
         listen = self.cfg["listen"]
+        if listen.get("cooldowns_off"):
+            return True
         window = float(listen.get("budget_window_s", 300))
         limit = int(listen.get("budget_count", 10))
         if limit <= 0:

@@ -234,7 +234,7 @@
       <div class="row" style="margin-top:12px">
         <input type="checkbox" id="cooldownsOff">
         <label for="cooldownsOff" style="margin:0;color:var(--text)"
-          title="Caps every cooldown at 5 seconds">Disable cooldowns</label>
+          title="Caps every cooldown at 5 seconds and lifts the fire budget">Disable cooldowns</label>
       </div>
 
       <div class="row" style="margin-top:14px">
@@ -951,7 +951,10 @@ function paintStream(s) {
   }
 
   const lf = $('#lastFire');
-  if (lastFire) {
+  if (lastFire && lastFire.held) {
+    lf.innerHTML = `<span style="color:var(--warn)">matched, held: ` +
+                   `${escapeHtml(lastFire.held)}</span>`;
+  } else if (lastFire) {
     const ago = Math.round((Date.now() - lastFire.at) / 1000);
     lf.innerHTML = `fired <span class="clip">${escapeHtml(lastFire.name)}</span>` +
                    ` &middot; ${ago}s ago` +

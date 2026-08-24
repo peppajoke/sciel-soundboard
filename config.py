@@ -40,6 +40,10 @@ DEFAULTS = {
         # Beam search rather than greedy. Measured 208 ms/clip when combined
         # with the trigger prompt, well inside the 750 ms hop.
         "beam_size": 5,
+        # Window-peak level (dBFS) below which nothing is sent to whisper.
+        # -45 sits between an analog noise floor and quiet speech; raising it
+        # toward -35 trades a little sensitivity for less decode load.
+        "speech_gate_db": -45.0,
         "threshold": 0.82,       # default fuzzy-match score to fire
         # Per-clip cooldown, applied to EVERY automatic path (trigger matches
         # and random drops alike). A soundbite lands once and then rests --
