@@ -111,8 +111,7 @@
             font-size:14px; line-height:1.5; word-break:break-word;
             display:flex; align-items:center; }
   #stream .quiet { color:var(--dim); font-style:italic; }
-  #stream .live { color:var(--text); }
-  #stream .age { color:var(--dim); font-size:11px; white-space:nowrap; }
+  #stream .live { color:var(--text); transition:opacity .4s linear; }
   #stream b { color:var(--good); }
   #lastFire { height:32px; margin-top:8px; font-size:12px; color:var(--dim);
               display:flex; align-items:center; gap:6px; }
@@ -865,11 +864,15 @@ function paintStream(s) {
     box.innerHTML = `<span class="quiet">${why}</span>`;
   } else {
     streams.sort((a, b) => a.age - b.age);
-    // Age is shown so a frozen display is obvious: if the seconds keep
-    // climbing while you talk, the listener has stalled rather than the UI.
-    box.innerHTML = streams.map(x =>
-      `<span class="live">${escapeHtml(x.text)}</span>` +
-      `<span class="age"> ${x.age.toFixed(1)}s</span>`).join('<br>');
+    // Freshness is shown by fading the words as they age out, not by printing
+    // a number beside them -- a counter next to speech is noise, and the only
+    // thing worth conveying is "this is current" vs "this is going stale".
+    const gap = s.stream_gap_s || 10;
+    box.innerHTML = streams.map(x => {
+      const fade = Math.max(0.32, 1 - (x.age / gap) * 0.75);
+      return `<span class="live" style="opacity:${fade.toFixed(2)}">` +
+             `${escapeHtml(x.text)}</span>`;
+    }).join('<br>');
   }
 
   const lf = $('#lastFire');

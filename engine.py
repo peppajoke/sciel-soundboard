@@ -452,6 +452,7 @@ class Engine:
             # showing words long after they had aged out of matching, which
             # looks like the listener has stalled.
             "streams": self.live_streams(),
+            "stream_gap_s": float(self.cfg["listen"].get("stream_gap_s", 10.0)),
             "random": {
                 "enabled": bool(self.cfg.get("random", {}).get("enabled")),
                 "eligible": len(self.library.random_clips()),

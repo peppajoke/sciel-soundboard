@@ -135,8 +135,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 5,
-      "last_played": 1787593650.617113,
+      "plays": 6,
+      "last_played": 1787596338.1615698,
       "finished": true,
       "added_at": 1787538912.4115906
     },
@@ -196,8 +196,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787593637.224403,
+      "plays": 4,
+      "last_played": 1787596366.471089,
       "finished": true,
       "added_at": 1787540853.6944506
     },
@@ -494,8 +494,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787595262.4138243,
+      "plays": 2,
+      "last_played": 1787596325.669573,
       "finished": true,
       "added_at": 1787540880.4707851
     },
