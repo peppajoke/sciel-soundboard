@@ -40,6 +40,20 @@
   .src .cnt { color:var(--dim); font-size:12px; }
   .src input { flex:1; }
   .note { color:var(--dim); font-size:12px; margin-top:16px; }
+
+  /* Non-blocking notices. alert() is a modal: in a polling UI it re-fires and
+     locks the browser, which is exactly what happened. Fixed position so a
+     notice can never shift the page either. */
+  #toast { position:fixed; right:16px; bottom:16px; z-index:100;
+           display:flex; flex-direction:column; gap:8px; align-items:flex-end;
+           pointer-events:none; }
+  #toast div { background:var(--panel); border:1px solid var(--hot);
+               color:var(--text); border-radius:8px; padding:9px 13px;
+               font-size:13px; max-width:min(420px,80vw);
+               box-shadow:0 6px 20px #0009; animation:toastin .15s ease-out; }
+  #toast div.ok { border-color:var(--good); }
+  @keyframes toastin { from { opacity:0; transform:translateY(6px); } }
+
 </style>
 </head>
 <body>
@@ -67,6 +81,36 @@
 
 <script>
 const $ = s => document.querySelector(s);
+
+// Non-blocking notice. Repeats of the same message refresh the existing one
+// rather than stacking, so a failure that recurs every poll cannot pile up.
+const _toasts = new Map();
+function notify(message, ok) {
+  let box = document.getElementById('toast');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'toast';
+    document.body.appendChild(box);
+  }
+  const existing = _toasts.get(message);
+  if (existing) {
+    clearTimeout(existing.timer);
+    existing.timer = setTimeout(() => {
+      existing.el.remove(); _toasts.delete(message);
+    }, 5000);
+    return;
+  }
+  const el = document.createElement('div');
+  if (ok) el.className = 'ok';
+  el.textContent = message;
+  box.appendChild(el);
+  const entry = {el, timer: setTimeout(() => {
+    el.remove(); _toasts.delete(message);
+  }, 5000)};
+  _toasts.set(message, entry);
+}
+
+
 const api = async (path, opts={}) => {
   const r = await fetch(path, opts);
   const body = await r.json().catch(() => ({}));
@@ -128,12 +172,25 @@ async function load() {
       load();
     };
 
-    el.querySelector('.del').onclick = async () => {
-      const warn = s.clips
-        ? `Delete "${s.name}"? ${s.clips} clip(s) will become unassigned. The clips are kept.`
-        : `Delete "${s.name}"?`;
-      if (!confirm(warn)) return;
-      await api(`/api/sources/${s.id}`, {method:'DELETE'});
+    // Two-step delete rather than confirm(): no modal, same protection.
+    const del = el.querySelector('.del');
+    let armed = false, timer = null;
+    del.onclick = async () => {
+      if (!armed) {
+        armed = true;
+        del.textContent = s.clips
+          ? `Again to delete (${s.clips} clips kept)` : 'Click again';
+        del.style.color = 'var(--hot)';
+        timer = setTimeout(() => {
+          armed = false; del.textContent = 'Delete'; del.style.color = '';
+        }, 4000);
+        return;
+      }
+      clearTimeout(timer);
+      try {
+        await api(`/api/sources/${s.id}`, {method:'DELETE'});
+        notify(`Deleted "${s.name}"`, true);
+      } catch (e) { notify('Delete failed: ' + e.message); }
       load();
     };
     list.appendChild(el);
@@ -172,7 +229,7 @@ async function uploadImage(id, file) {
   try {
     await api(`/api/sources/${id}/image`, {method:'POST', body: fd});
     load();
-  } catch (e) { alert('Could not set picture: ' + e.message); }
+  } catch (e) { notify('Could not set picture: ' + e.message); }
 }
 
 async function add() {
@@ -184,7 +241,7 @@ async function add() {
       body: JSON.stringify({name})});
     $('#name').value = '';
     load();
-  } catch (e) { alert('Could not add: ' + e.message); }
+  } catch (e) { notify('Could not add: ' + e.message); }
 }
 $('#addBtn').onclick = add;
 $('#name').onkeydown = e => { if (e.key === 'Enter') add(); };

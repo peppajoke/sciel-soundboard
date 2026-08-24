@@ -24,6 +24,7 @@
     "short_line_threshold": 0.95,
     "stream_words": 20,
     "stream_gap_s": 10.0,
+    "max_fire_age_s": 2.0,
     "budget_count": 10,
     "budget_window_s": 300
   },

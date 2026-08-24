@@ -130,6 +130,20 @@
            border-radius:12px; padding:18px; width:min(460px,92vw); }
   dialog::backdrop { background:#000a; }
 
+  /* Non-blocking notices. alert() is a modal: in a polling UI it re-fires and
+     locks the browser, which is exactly what happened. Fixed position so a
+     notice can never shift the page either. */
+  #toast { position:fixed; right:16px; bottom:16px; z-index:100;
+           display:flex; flex-direction:column; gap:8px; align-items:flex-end;
+           pointer-events:none; }
+  #toast div { background:var(--panel); border:1px solid var(--hot);
+               color:var(--text); border-radius:8px; padding:9px 13px;
+               font-size:13px; max-width:min(420px,80vw);
+               box-shadow:0 6px 20px #0009; animation:toastin .15s ease-out; }
+  #toast div.ok { border-color:var(--good); }
+  @keyframes toastin { from { opacity:0; transform:translateY(6px); } }
+
+
   #trim { position:relative; margin-top:6px; user-select:none; touch-action:none; }
   #wave { width:100%; height:88px; display:block; background:var(--panel2);
           border:1px solid var(--line); border-radius:7px; }
@@ -294,6 +308,36 @@
 
 <script>
 const $ = s => document.querySelector(s);
+
+// Non-blocking notice. Repeats of the same message refresh the existing one
+// rather than stacking, so a failure that recurs every poll cannot pile up.
+const _toasts = new Map();
+function notify(message, ok) {
+  let box = document.getElementById('toast');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'toast';
+    document.body.appendChild(box);
+  }
+  const existing = _toasts.get(message);
+  if (existing) {
+    clearTimeout(existing.timer);
+    existing.timer = setTimeout(() => {
+      existing.el.remove(); _toasts.delete(message);
+    }, 5000);
+    return;
+  }
+  const el = document.createElement('div');
+  if (ok) el.className = 'ok';
+  el.textContent = message;
+  box.appendChild(el);
+  const entry = {el, timer: setTimeout(() => {
+    el.remove(); _toasts.delete(message);
+  }, 5000)};
+  _toasts.set(message, entry);
+}
+
+
 let clips = [], cfg = null, since = 0, editing = null;
 let tab = localStorage.getItem('sb_tab') || 'todo';
 let sortBy = localStorage.getItem('sb_sort') || 'name';
@@ -435,7 +479,7 @@ async function play(id, el) {
     await api(`/api/clips/${id}/play`, {method:'POST'});
     if (el) { el.classList.add('fired'); setTimeout(()=>el.classList.remove('fired'), 600); }
     loadClips();
-  } catch (e) { alert('Play failed: ' + e.message); }
+  } catch (e) { notify('Play failed: ' + e.message); }
 }
 
 $('#sortBy').onchange = e => {
@@ -629,6 +673,7 @@ async function loadWave(c) {
 }
 
 function openEditor(c) {
+  disarmDelete();
   editing = c;
   $('#edTitle').textContent = c.name;
   $('#edName').value = c.name;
@@ -675,7 +720,7 @@ $('#edSave').onclick = async () => {
   try {
     await saveClip();
   } catch (e) {
-    alert('Save failed: ' + e.message);
+    notify('Save failed: ' + e.message);
     return;
   }
   stopPreview();
@@ -693,11 +738,30 @@ $('#edDuplicate').onclick = async () => {
   openEditor(fresh);
 };
 
+// Two-step delete rather than confirm(): same protection, no modal.
+let deleteArmed = false, deleteTimer = null;
 $('#edDelete').onclick = async () => {
-  if (!confirm(`Delete "${editing.name}"? This removes the file.`)) return;
-  await api(`/api/clips/${editing.id}`, {method:'DELETE'});
-  $('#editor').close(); loadClips();
+  if (!deleteArmed) {
+    deleteArmed = true;
+    $('#edDelete').textContent = 'Click again to delete';
+    $('#edDelete').style.color = 'var(--hot)';
+    clearTimeout(deleteTimer);
+    deleteTimer = setTimeout(disarmDelete, 4000);
+    return;
+  }
+  disarmDelete();
+  try {
+    await api(`/api/clips/${editing.id}`, {method:'DELETE'});
+    notify(`Deleted "${editing.name}"`, true);
+  } catch (e) { notify('Delete failed: ' + e.message); return; }
+  stopPreview(); $('#editor').close(); loadClips();
 };
+function disarmDelete() {
+  deleteArmed = false;
+  clearTimeout(deleteTimer);
+  const b = $('#edDelete');
+  if (b) { b.textContent = 'Delete'; b.style.color = ''; }
+}
 
 // ---------- auto / status ----------
 $('#autoBtn').onclick = async () => {
