@@ -64,7 +64,11 @@
   #drop { border:1.5px dashed var(--line); border-radius:10px; padding:20px;
           text-align:center; color:var(--dim); cursor:pointer; }
   #drop.over { border-color:var(--accent); color:var(--accent); }
-  #meters { margin-bottom:8px; }
+  /* FIXED height, scrolling internally: this block sits above the settings
+     panel, so any change in its height drags every control below it. Three
+     rows fit; more scroll. Adding or removing an input must not move the
+     checkbox you are about to click. */
+  #meters { margin-bottom:8px; height:54px; overflow-y:auto; }
   .meter { display:flex; align-items:center; gap:6px; font-size:11px;
            color:var(--dim); margin-bottom:3px; }
   .meter .bar { flex:1; height:6px; background:var(--panel2); border-radius:3px;
@@ -74,7 +78,9 @@
   .meter.dead .fill { background:var(--hot); }
   .meter .nm { width:104px; overflow:hidden; text-overflow:ellipsis;
                white-space:nowrap; }
-  #feed { max-height:320px; overflow:auto; font-size:12px;
+  /* Fixed height, not max-height: the feed filling up used to grow the panel
+     and push Settings down the page while you were using it. */
+  #feed { height:300px; overflow:auto; font-size:12px;
           font-family:ui-monospace,Consolas,monospace; }
   .ev { padding:3px 0; border-bottom:1px solid var(--line); }
   .ev .src { color:var(--dim); }
@@ -82,8 +88,13 @@
   .ev.err { color:var(--hot); }
   .ev .sc { color:var(--warn); }
   .row { display:flex; gap:8px; align-items:center; }
+  /* Fixed widths on purpose: these repaint every second, and letting them
+     size to their text made the header re-wrap and shove the page down. */
   .pill { font-size:11px; padding:2px 7px; border-radius:99px;
-          background:var(--panel2); border:1px solid var(--line); color:var(--dim); }
+          background:var(--panel2); border:1px solid var(--line); color:var(--dim);
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #budget { min-width:96px; text-align:center; }
+  #health { min-width:150px; text-align:center; }
   .pill.ok { color:var(--good); border-color:var(--good); }
   .pill.bad { color:var(--hot); border-color:var(--hot); }
   dialog { background:var(--panel); color:var(--text); border:1px solid var(--line);
@@ -145,7 +156,8 @@
       <div id="drop">Drop audio here, or click to choose<br>
         <span style="font-size:12px">or drop files in the NAS inbox</span></div>
       <input id="file" type="file" multiple accept="audio/*,video/*" hidden>
-      <div id="uploadMsg" style="font-size:12px;color:var(--dim);margin-top:8px"></div>
+      <div id="uploadMsg" style="font-size:12px;color:var(--dim);margin-top:8px;
+           min-height:16px"></div>
     </section>
 
     <section>
@@ -178,11 +190,13 @@
         <input id="randMax" type="text" style="width:60px" inputmode="decimal">
         <span style="color:var(--dim)">minutes apart</span>
       </div>
-      <div id="randInfo" style="font-size:11px;color:var(--dim);margin-top:4px"></div>
+      <div id="randInfo" style="font-size:11px;color:var(--dim);margin-top:4px;
+           min-height:15px"></div>
 
       <label>Outputs (clips play to all of these)</label>
       <div id="outputs"></div>
-      <div id="cfgStatus" style="font-size:11px;color:var(--dim);margin-top:10px">Settings save as you change them.</div>
+      <div id="cfgStatus" style="font-size:11px;color:var(--dim);margin-top:10px;
+           min-height:15px">Settings save as you change them.</div>
     </section>
   </aside>
 </main>
@@ -634,11 +648,22 @@ function paintAuto(s) {
   // speaking. Without this, "silent room" and "wrong device" look the same.
   const caps0 = (s.listener || {}).captures || [];
   const mb = $('#meters');
-  if (mb.childElementCount !== caps0.length) {
-    mb.innerHTML = caps0.map(c =>
+  // Slots are keyed to the configured inputs, so a listener restart cannot
+  // change the element count and reflow everything below it.
+  const wantSlots = Math.max(caps0.length, (cfg?.listen?.inputs || []).length);
+  if (mb.childElementCount !== wantSlots) {
+    mb.innerHTML = Array.from({length: wantSlots}, () =>
       `<div class="meter"><span class="nm"></span>
         <span class="bar"><span class="fill"></span></span>
         <span class="db"></span></div>`).join('');
+  }
+  // Blank any slot with no live capture rather than removing the row.
+  for (let i = caps0.length; i < mb.childElementCount; i++) {
+    const el = mb.children[i];
+    el.querySelector('.nm').textContent = '—';
+    el.querySelector('.fill').style.width = '0%';
+    el.querySelector('.db').textContent = '';
+    el.classList.remove('dead');
   }
   caps0.forEach((c, i) => {
     const el = mb.children[i];
@@ -818,7 +843,9 @@ function saveSettings() {
           max_minutes: parseFloat($('#randMax').value) || 8,
         })});
       $('#cfgStatus').textContent = 'Saved.';
-      refresh();
+      // Deliberately NOT re-rendering the panel or forcing a refresh here:
+      // rebuilding the device checkboxes under the pointer is what made
+      // changing a setting feel like the page jumped away.
     } catch (e) {
       $('#cfgStatus').textContent = 'Save failed: ' + e.message;
     }

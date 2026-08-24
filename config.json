@@ -6,23 +6,19 @@
   "listen": {
     "inputs": [
       {
-        "device": null,
+        "device": "Voicemeeter In 2 (VB-Audio Voicemeeter VAIO)",
         "loopback": true
       },
       {
-        "device": "Voicemeeter VAIO3 Input (VB-Audio Voicemeeter VAIO)",
-        "loopback": true
-      },
-      {
-        "device": "Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO)",
-        "loopback": true
-      },
-      {
-        "device": "Voicemeeter Out A4 (VB-Audio Voicemeeter VAIO)",
+        "device": "Voicemeeter Out B3 (VB-Audio Voicemeeter VAIO)",
         "loopback": false
       },
       {
-        "device": "Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)",
+        "device": "Voicemeeter Out A3 (VB-Audio Voicemeeter VAIO)",
+        "loopback": false
+      },
+      {
+        "device": "Voicemeeter Out A4 (VB-Audio Voicemeeter VAIO)",
         "loopback": false
       },
       {
@@ -46,7 +42,7 @@
     "budget_count": 10,
     "budget_window_s": 300
   },
-  "auto_enabled": true,
+  "auto_enabled": false,
   "random": {
     "enabled": false,
     "min_minutes": 4.0,

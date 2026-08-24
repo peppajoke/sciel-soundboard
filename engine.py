@@ -303,7 +303,14 @@ class Engine:
         """Apply a config patch. Device/listen changes restart what they touch."""
         outputs_changed = "outputs" in patch and patch["outputs"] != self.cfg["outputs"]
         gain_changed = "master_gain" in patch
-        listen_changed = "listen" in patch
+        # Restart only when the capture list itself changed. The settings
+        # panel sends the whole listen block on every edit, so keying off
+        # "listen" in patch tore the listener down for a threshold nudge --
+        # which made the meters vanish and reappear, shoving the panel around
+        # under the cursor mid-click.
+        old_inputs = self.cfg.get("listen", {}).get("inputs")
+        new_inputs = patch.get("listen", {}).get("inputs", old_inputs)
+        listen_changed = new_inputs != old_inputs
 
         self.cfg = config._merge(self.cfg, patch)
         config.save(self.cfg)
