@@ -72,6 +72,37 @@ def score(line: str, phrase: str) -> float:
     return best
 
 
+def stitch(tail: list[str], new: list[str], max_words: int = 60) -> list[str]:
+    """Append `new` to the running transcript `tail`, removing the overlap.
+
+    The listener re-scans a rolling window several times a second, so
+    consecutive transcripts repeat most of their text:
+
+        window 1: "fuck fuck"
+        window 2: "fuck fuck fuck"
+
+    Matching each emission separately is what made "fuck fuck fuck" fail --
+    neither batch ever contained the whole phrase, and a trigger that spans a
+    window boundary is invisible. Stitching produces one continuous sequence
+    to match against instead.
+
+    Overlap is found by the longest suffix of `tail` that is also a prefix of
+    `new`. Longest-first matters: with repeated words, a short match would
+    leave duplicates behind ("fuck fuck fuck fuck").
+    """
+    if not tail:
+        return new[-max_words:]
+    if not new:
+        return tail[-max_words:]
+
+    limit = min(len(tail), len(new))
+    for k in range(limit, 0, -1):
+        if tail[-k:] == new[:k]:
+            return (tail + new[k:])[-max_words:]
+    # No overlap at all: a gap in speech, or whisper changed its mind entirely.
+    return (tail + new)[-max_words:]
+
+
 @dataclass(frozen=True)
 class Match:
     clip_id: str

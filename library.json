@@ -55,8 +55,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787584637.5644038,
+      "plays": 2,
+      "last_played": 1787584840.2800844,
       "finished": true,
       "added_at": 1787538910.9074614
     },
@@ -75,8 +75,8 @@
       "random_ok": false,
       "source": "dj-khaled-3180",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787584817.212057,
       "finished": true,
       "added_at": 1787538911.38667
     },
@@ -115,8 +115,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 4,
-      "last_played": 1787583574.1508095,
+      "plays": 5,
+      "last_played": 1787584849.6803007,
       "finished": true,
       "added_at": 1787538912.0169523
     },
@@ -135,8 +135,8 @@
       "random_ok": false,
       "source": "trump-a4b6",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584630.3891935,
+      "plays": 3,
+      "last_played": 1787584833.0997455,
       "finished": true,
       "added_at": 1787538912.4115906
     },
@@ -196,8 +196,8 @@
       "random_ok": false,
       "source": "tim-robinson-573a",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787544070.176155,
+      "plays": 2,
+      "last_played": 1787584926.080714,
       "finished": true,
       "added_at": 1787540853.6944506
     },
@@ -808,8 +808,8 @@
       "random_ok": false,
       "source": "star-wars-de06",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583578.846688,
+      "plays": 2,
+      "last_played": 1787584892.6041749,
       "finished": true,
       "added_at": 1787583157.1275167
     },
@@ -929,8 +929,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584099.3572426,
+      "plays": 3,
+      "last_played": 1787584862.6878185,
       "finished": true,
       "added_at": 1787583159.5519447
     },
@@ -1306,8 +1306,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 2,
-      "last_played": 1787584309.3342159,
+      "plays": 3,
+      "last_played": 1787584828.1823666,
       "finished": true,
       "added_at": 1787583173.4016266
     }

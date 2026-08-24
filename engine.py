@@ -34,6 +34,12 @@ SELF_HEAR_GUARD_S = 2.5
 # the same clip repeatedly off a single phrase.
 BYPASS_COOLDOWN_S = 5.0
 
+# Silence long enough to call it a new utterance. Below this, consecutive
+# transcripts are stitched into one sequence so a phrase can span windows;
+# above it the running transcript is dropped, so a trigger cannot be assembled
+# from words said a minute apart.
+STREAM_GAP_S = 4.0
+
 
 class Engine:
     def __init__(self):
@@ -50,6 +56,8 @@ class Engine:
         self._random_thread = None
         self._last_random = None
         self._dirty = False
+        # Running transcript per capture source: (words, last_seen).
+        self._stream: dict[str, tuple[list, float]] = {}
         self._lock = threading.Lock()
 
         # Ring buffer of everything that happened, newest last. The UI polls
@@ -142,17 +150,29 @@ class Engine:
         if not words:
             return
 
-        # Short lines are not discarded -- they are held to a higher bar. A
-        # loose match on one word is noise; an exact one is a real hit.
-        short = len(words) < int(listen.get("min_words", 2))
+        # Stitch into the running transcript for this source. The listener
+        # re-scans an overlapping window, so matching each emission on its own
+        # missed any phrase that straddled a window boundary -- "fuck fuck
+        # fuck" arriving as "fuck fuck" then "fuck fuck fuck" never matched.
+        now = time.time()
+        prev_words, last_seen = self._stream.get(line.source, ([], 0.0))
+        if now - last_seen > STREAM_GAP_S:
+            prev_words = []
+        stitched = matcher.stitch(prev_words, words)
+        self._stream[line.source] = (stitched, now)
+
+        text = " ".join(stitched)
+
+        # The floor applies to the SEQUENCE, not one emission: a phrase that
+        # has only produced one word so far is still genuinely short.
+        short = len(stitched) < int(listen.get("min_words", 2))
         floor = float(listen.get("short_line_threshold", 0.95)) if short else 0.0
 
         if not self.cfg.get("auto_enabled"):
-            self._event("heard", line.text, source=line.source, fired=None,
+            self._event("heard", text, source=line.source, fired=None,
                         note="auto off")
             return
 
-        now = time.time()
         with self._lock:
             if now - self._last_fire_at < self._cooldown("global_cooldown_s", 2.0):
                 self._event("heard", line.text, source=line.source, fired=None,
@@ -164,13 +184,13 @@ class Engine:
             window = float(listen.get("budget_window_s", 300))
             with self._lock:
                 wait = int(window - (now - self._auto_fires[0])) if self._auto_fires else 0
-            self._event("heard", line.text, source=line.source, fired=None,
+            self._event("heard", text, source=line.source, fired=None,
                         note=f"budget spent ({limit}/{int(window/60)}min, "
                              f"resets in {wait}s)")
             return
 
         candidates = self.library.auto_clips()
-        hit = matcher.find(line.text, candidates,
+        hit = matcher.find(text, candidates,
                            float(listen.get("threshold", 0.82)), floor=floor)
 
         if not hit:
@@ -180,10 +200,10 @@ class Engine:
             best_name = None
             for clip in candidates:
                 for phrase in clip.triggers:
-                    s = matcher.score(line.text, phrase)
+                    s = matcher.score(text, phrase)
                     if s > best:
                         best, best_name = s, clip.name
-            self._event("heard", line.text, source=line.source, fired=None,
+            self._event("heard", text, source=line.source, fired=None,
                         best=round(best, 3), best_clip=best_name,
                         note=f"short line, needs {floor:.2f}" if short else None)
             return
@@ -192,12 +212,15 @@ class Engine:
         with self._lock:
             last = self._clip_last_fired.get(hit.clip_id, 0.0)
             if now - last < cooldown:
-                self._event("heard", line.text, source=line.source, fired=None,
+                self._event("heard", text, source=line.source, fired=None,
                             note=f"clip cooldown ({hit.score:.2f})")
                 return
 
         clip = self.library.clips[hit.clip_id]
-        self._event("heard", line.text, source=line.source, fired=clip.name,
+        # Consume the sequence: leaving it in place would re-match on the next
+        # window and rely on the cooldown to suppress a clip that already fired.
+        self._stream[line.source] = ([], now)
+        self._event("heard", text, source=line.source, fired=clip.name,
                     best=round(hit.score, 3), phrase=hit.phrase)
         try:
             self.play(hit.clip_id, why=f"auto:{hit.phrase} ({hit.score:.2f})")

@@ -99,6 +99,40 @@ def main():
         matcher.find("kissing", [FakeClip("kiss", ["kiss"], threshold=0.5)],
                      0.82, floor=0.95) is None))
 
+    # --- transcript stitching ---------------------------------------------
+    # The listener re-scans an overlapping window, so consecutive transcripts
+    # repeat most of their text. These are the real shapes seen in the feed.
+    n = matcher.normalize
+    results.append(check(
+        "overlapping windows stitch without duplicating repeated words",
+        matcher.stitch(n("fuck fuck"), n("fuck fuck fuck")) == ["fuck"] * 3))
+
+    results.append(check(
+        "a phrase spanning two windows becomes one sequence",
+        matcher.stitch(n("you shall not"), n("shall not pass"))
+        == ["you", "shall", "not", "pass"]))
+
+    results.append(check(
+        "unrelated text is appended rather than merged",
+        matcher.stitch(n("hello there"), n("general kenobi"))
+        == ["hello", "there", "general", "kenobi"]))
+
+    results.append(check(
+        "an identical repeat collapses to itself",
+        matcher.stitch(n("just great"), n("just great")) == ["just", "great"]))
+
+    results.append(check(
+        "the sequence is capped so it cannot grow forever",
+        len(matcher.stitch(n(" ".join(["word"] * 80)), n("end"), max_words=60)) == 60))
+
+    # The regression Jack hit: neither window on its own holds the trigger.
+    seq = matcher.stitch(n("fuck fuck"), n("fuck fuck fuck"))
+    trip = [FakeClip("triple", ["fuck fuck fuck"])]
+    results.append(check(
+        "a trigger invisible to either window fires on the stitched sequence",
+        matcher.find(" ".join(seq), trip) is not None
+        and matcher.find("fuck fuck", trip) is None))
+
     print(f"\n{sum(results)}/{len(results)} passed")
     return 0 if all(results) else 1
 
