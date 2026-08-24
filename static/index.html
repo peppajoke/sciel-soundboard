@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Soundboard</title>
+<style>
+  :root {
+    --bg:#0e1014; --panel:#161a21; --panel2:#1d222b; --line:#2a313d;
+    --text:#e6e9ef; --dim:#9099a8; --accent:#5aa9ff; --hot:#ff5a7a;
+    --good:#4ad48a; --warn:#ffb45a;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:14px/1.45 ui-sans-serif,system-ui,Segoe UI,sans-serif; }
+  header { display:flex; gap:12px; align-items:center; padding:12px 16px;
+           background:var(--panel); border-bottom:1px solid var(--line);
+           position:sticky; top:0; z-index:10; flex-wrap:wrap; }
+  h1 { font-size:15px; margin:0 8px 0 0; letter-spacing:.02em; }
+  #search { flex:1; min-width:200px; padding:9px 12px; border-radius:8px;
+            border:1px solid var(--line); background:var(--panel2);
+            color:var(--text); font-size:14px; }
+  button { font:inherit; color:var(--text); background:var(--panel2);
+           border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+           cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .toggle.on { background:var(--good); color:#06110b; border-color:var(--good);
+               font-weight:600; }
+  .danger:hover { border-color:var(--hot); color:var(--hot); }
+  main { display:grid; grid-template-columns:1fr 340px; gap:16px; padding:16px;
+         align-items:start; }
+  @media (max-width:900px){ main { grid-template-columns:1fr; } }
+
+  #tabs { display:flex; gap:8px; margin-bottom:10px; }
+  #srcTabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  #srcTabs .tab { padding:5px 10px; font-size:13px; border-radius:99px; }
+  .tab { color:var(--dim); }
+  .tab.sel { color:var(--text); border-color:var(--accent); background:var(--panel); }
+  .tab .cnt { font-size:11px; opacity:.75; margin-left:4px; }
+  #pads { display:grid; gap:10px;
+          grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+  .pad { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+         padding:12px; cursor:pointer; text-align:left; position:relative;
+         transition:transform .05s, border-color .15s; }
+  .pad:hover { border-color:var(--accent); }
+  .pad:active { transform:scale(.97); }
+  .pad.fired { border-color:var(--good); box-shadow:0 0 0 1px var(--good) inset; }
+  .pad .nm { font-weight:600; margin-bottom:4px; word-break:break-word; }
+  .pad .meta { color:var(--dim); font-size:12px; }
+  .pad .trig { color:var(--accent); font-size:11px; margin-top:6px;
+               white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pad .edit { position:absolute; top:6px; right:6px; opacity:0; padding:2px 6px;
+               font-size:11px; }
+  .pad:hover .edit { opacity:1; }
+
+  aside > section { background:var(--panel); border:1px solid var(--line);
+                    border-radius:10px; padding:12px; margin-bottom:14px; }
+  aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.08em;
+             color:var(--dim); margin:0 0 10px; }
+  label { display:block; font-size:12px; color:var(--dim); margin:10px 0 4px; }
+  input[type=text], select, textarea {
+    width:100%; padding:7px 9px; border-radius:7px; border:1px solid var(--line);
+    background:var(--panel2); color:var(--text); font:inherit; }
+  #drop { border:1.5px dashed var(--line); border-radius:10px; padding:20px;
+          text-align:center; color:var(--dim); cursor:pointer; }
+  #drop.over { border-color:var(--accent); color:var(--accent); }
+  #meters { margin-bottom:8px; }
+  .meter { display:flex; align-items:center; gap:6px; font-size:11px;
+           color:var(--dim); margin-bottom:3px; }
+  .meter .bar { flex:1; height:6px; background:var(--panel2); border-radius:3px;
+                overflow:hidden; }
+  .meter .fill { height:100%; width:0; background:var(--good);
+                 transition:width .15s; }
+  .meter.dead .fill { background:var(--hot); }
+  .meter .nm { width:104px; overflow:hidden; text-overflow:ellipsis;
+               white-space:nowrap; }
+  #feed { max-height:320px; overflow:auto; font-size:12px;
+          font-family:ui-monospace,Consolas,monospace; }
+  .ev { padding:3px 0; border-bottom:1px solid var(--line); }
+  .ev .src { color:var(--dim); }
+  .ev.fire { color:var(--good); }
+  .ev.err { color:var(--hot); }
+  .ev .sc { color:var(--warn); }
+  .row { display:flex; gap:8px; align-items:center; }
+  .pill { font-size:11px; padding:2px 7px; border-radius:99px;
+          background:var(--panel2); border:1px solid var(--line); color:var(--dim); }
+  .pill.ok { color:var(--good); border-color:var(--good); }
+  .pill.bad { color:var(--hot); border-color:var(--hot); }
+  dialog { background:var(--panel); color:var(--text); border:1px solid var(--line);
+           border-radius:12px; padding:18px; width:min(460px,92vw); }
+  dialog::backdrop { background:#000a; }
+
+  #trim { position:relative; margin-top:6px; user-select:none; touch-action:none; }
+  #wave { width:100%; height:88px; display:block; background:var(--panel2);
+          border:1px solid var(--line); border-radius:7px; }
+  .handle { position:absolute; top:0; bottom:0; width:11px; margin-left:-5px;
+            cursor:ew-resize; }
+  .handle::before { content:""; position:absolute; left:4px; top:0; bottom:0;
+                    width:3px; background:var(--accent); border-radius:2px; }
+  .handle::after { content:""; position:absolute; left:0; top:50%; width:11px;
+                   height:22px; margin-top:-11px; background:var(--accent);
+                   border-radius:3px; }
+  #playhead { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px;
+              background:var(--good); pointer-events:none; display:none; }
+  #wave { cursor:text; }
+  #trimHint { font-size:11px; color:var(--dim); margin-top:6px; }
+  #trimTimes { display:flex; justify-content:space-between; font-size:11px;
+               color:var(--dim); margin-top:4px;
+               font-family:ui-monospace,Consolas,monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Soundboard</h1>
+  <input id="search" placeholder="Search clips…  (Enter plays the first result)" autofocus>
+  <button id="autoBtn" class="toggle">Auto: off</button>
+  <button id="stopBtn" class="danger">Stop</button>
+  <span id="budget" class="pill" title="auto-fires used in the current window">…</span>
+  <span id="health" class="pill">…</span>
+  <a href="/sources" style="color:var(--accent);text-decoration:none;font-size:13px">Sources</a>
+</header>
+
+<main>
+  <div>
+    <div id="tabs">
+      <button class="tab" data-state="todo">Needs clipping <span class="cnt"></span></button>
+      <button class="tab" data-state="done">Finished <span class="cnt"></span></button>
+      <button class="tab" data-state="all">All <span class="cnt"></span></button>
+      <select id="sortBy" style="margin-left:auto;width:auto">
+        <option value="name">A–Z</option>
+        <option value="plays">Most played</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+      </select>
+    </div>
+    <div id="srcTabs"></div>
+    <div id="pads"></div>
+  </div>
+
+  <aside>
+    <section>
+      <h2>Add clips</h2>
+      <div id="drop">Drop audio here, or click to choose<br>
+        <span style="font-size:12px">or drop files in the NAS inbox</span></div>
+      <input id="file" type="file" multiple accept="audio/*,video/*" hidden>
+      <div id="uploadMsg" style="font-size:12px;color:var(--dim);margin-top:8px"></div>
+    </section>
+
+    <section>
+      <h2>Live transcript</h2>
+      <div id="meters"></div>
+      <div id="feed"></div>
+    </section>
+
+    <section>
+      <h2>Settings</h2>
+      <label>Auto mode listens to — tick any number, each is scanned separately</label>
+      <div id="inputs"></div>
+      <label>Match threshold <span id="thVal" class="pill"></span></label>
+      <input id="threshold" type="range" min="0.5" max="1" step="0.01" style="width:100%">
+      <label>Budget — most auto-fires allowed per window</label>
+      <div class="row">
+        <input id="budgetCount" type="text" style="width:70px" inputmode="numeric">
+        <span style="color:var(--dim)">per</span>
+        <input id="budgetWindow" type="text" style="width:70px" inputmode="numeric">
+        <span style="color:var(--dim)">minutes</span>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <input type="checkbox" id="randomOn">
+        <label for="randomOn" style="margin:0;color:var(--text)">Drop a random clip on an interval</label>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <input id="randMin" type="text" style="width:60px" inputmode="decimal">
+        <span style="color:var(--dim)">to</span>
+        <input id="randMax" type="text" style="width:60px" inputmode="decimal">
+        <span style="color:var(--dim)">minutes apart</span>
+      </div>
+      <div id="randInfo" style="font-size:11px;color:var(--dim);margin-top:4px"></div>
+
+      <label>Outputs (clips play to all of these)</label>
+      <div id="outputs"></div>
+      <div id="cfgStatus" style="font-size:11px;color:var(--dim);margin-top:10px">Settings save as you change them.</div>
+    </section>
+  </aside>
+</main>
+
+<dialog id="editor">
+  <h2 style="margin-top:0;font-size:15px" id="edTitle">Edit clip</h2>
+  <label>Name</label><input id="edName" type="text">
+  <label>Trim — drag the handles. The file is never cut; these bounds are honored at play time.</label>
+  <div id="trim">
+    <canvas id="wave"></canvas>
+    <div class="handle" id="hStart"></div>
+    <div class="handle" id="hEnd"></div>
+    <div id="playhead"></div>
+  </div>
+  <div id="trimHint">Click the waveform to hear from that point · Space plays the trimmed part · releasing a handle previews the edge</div>
+  <div id="trimTimes"><span id="tStart">0.00s</span>
+    <span id="tLen"></span><span id="tEnd">0.00s</span></div>
+
+  <label>Trigger phrases — one per line. Auto mode fires when speech is close to any of these.</label>
+  <textarea id="edTriggers" rows="4" placeholder="you shall not pass&#10;shall not pass"></textarea>
+  <label>Volume <span id="gainVal" class="pill"></span></label>
+  <div class="row">
+    <input id="edGain" type="range" min="-24" max="12" step="0.5" style="flex:1">
+    <button id="gainReset" style="padding:4px 8px;font-size:12px">Reset</button>
+  </div>
+
+  <label>Source — what it is clipped from</label>
+  <select id="edSource"></select>
+  <label>Tags (comma separated, for searching)</label><input id="edTags" type="text">
+  <div class="row" style="margin-top:12px">
+    <input type="checkbox" id="edFinished">
+    <label for="edFinished" style="margin:0;color:var(--text)">Finished — clipped down to the bit I want</label>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <input type="checkbox" id="edRandom">
+    <label for="edRandom" style="margin:0;color:var(--text)">Include in random drops</label>
+  </div>
+  <label>Threshold override — blank uses the global setting. Raise it for short triggers.</label>
+  <input id="edThreshold" type="text" placeholder="e.g. 0.9">
+  <div class="row" style="margin-top:16px">
+    <button id="edSave" style="flex:1">Save</button>
+    <button id="edPreview">Preview trim</button>
+    <button id="edDuplicate" title="Make another cut from this same audio">Duplicate</button>
+    <button id="edDelete" class="danger">Delete</button>
+    <button id="edCancel">Cancel</button>
+  </div>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+let clips = [], cfg = null, since = 0, editing = null;
+let tab = localStorage.getItem('sb_tab') || 'todo';
+let sortBy = localStorage.getItem('sb_sort') || 'name';
+let srcFilter = localStorage.getItem('sb_src') || '';
+
+const api = async (path, opts={}) => {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || r.status);
+  return r.json();
+};
+
+// ---------- pads ----------
+let sources = [];
+async function loadSources() {
+  const d = await api('/api/sources');
+  sources = d.sources;
+  $('#edSource').innerHTML = '<option value="">— none —</option>' +
+    sources.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+
+  // A source with no clips still gets a tab: it is how you see that a source
+  // exists at all without opening the sources page.
+  const tabsDef = [{id: '', label: 'All sources', n: null}]
+    .concat(sources.map(s => ({id: s.id, label: s.name, n: s.clips})))
+    .concat(d.unassigned ? [{id: 'none', label: 'No source', n: d.unassigned}] : []);
+
+  const box = $('#srcTabs');
+  box.innerHTML = '';
+  for (const t of tabsDef) {
+    const b = document.createElement('button');
+    b.className = 'tab' + (t.id === srcFilter ? ' sel' : '');
+    b.textContent = t.label;
+    if (t.n !== null) {
+      const c = document.createElement('span');
+      c.className = 'cnt'; c.textContent = t.n;
+      b.appendChild(c);
+    }
+    b.onclick = () => {
+      srcFilter = t.id;
+      localStorage.setItem('sb_src', srcFilter);
+      for (const o of box.children) o.classList.remove('sel');
+      b.classList.add('sel');
+      loadClips();
+    };
+    box.appendChild(b);
+  }
+}
+
+async function loadClips() {
+  const src = srcFilter;
+  $('#sortBy').value = sortBy;
+  const r = await api(`/api/clips?state=${tab}&sort=${sortBy}` +
+                      (src ? `&source=${encodeURIComponent(src)}` : '') +
+                      `&q=` + encodeURIComponent($('#search').value));
+  clips = r.clips;
+  // Scoped to #tabs: the source pills share the .tab class, and an unscoped
+  // query hit those too -- the first one without a count span threw, which
+  // killed render() and left the board looking empty.
+  for (const b of document.querySelectorAll('#tabs .tab')) {
+    b.classList.toggle('sel', b.dataset.state === tab);
+    const cnt = b.querySelector('.cnt');
+    if (cnt) cnt.textContent = r.counts[b.dataset.state] ?? 0;
+  }
+  render();
+}
+
+for (const b of document.querySelectorAll('#tabs .tab')) {
+  b.onclick = () => { tab = b.dataset.state; localStorage.setItem('sb_tab', tab); loadClips(); };
+}
+const srcName = id => {
+  const s = sources.find(x => x.id === id);
+  return s ? escapeHtml(s.name) + ' · ' : '';
+};
+
+function render() {
+  const pads = $('#pads');
+  pads.innerHTML = '';
+  if (!clips.length) {
+    pads.innerHTML = '<p style="color:var(--dim)">' + (
+      tab === 'todo' ? 'Nothing waiting to be clipped.'
+      : tab === 'done' ? 'No finished clips yet — trim some and tick Finished.'
+      : 'No clips yet — drop some in.') + '</p>';
+    return;
+  }
+  for (const c of clips) {
+    const el = document.createElement('div');
+    el.className = 'pad'; el.dataset.id = c.id;
+    el.innerHTML = `<button class="edit">edit</button>
+      <div class="nm"></div>
+      <div class="meta">${srcName(c.source)}${(c.play_duration ?? c.duration).toFixed(1)}s${
+        c.start || c.end != null ? ' ✂' : ''}${c.random_ok ? ' 🎲' : ''}${
+        (c.gain ?? 1) !== 1 ? ' ' + (c.gain === 0 ? 'muted'
+          : (20 * Math.log10(c.gain) > 0 ? '+' : '') +
+            (20 * Math.log10(c.gain)).toFixed(0) + 'dB') : ''}</div>
+      ${c.triggers.length ? '<div class="trig">▸ <span></span></div>' : ''}`;
+    el.querySelector('.nm').textContent = c.name;
+    if (c.triggers.length) el.querySelector('.trig span').textContent = c.triggers.join(' / ');
+    el.onpointerdown = e => {
+      if (e.target.classList.contains('edit')) return;
+      e.preventDefault();
+      play(c.id, el);
+    };
+    el.onclick = e => {
+      if (e.target.classList.contains('edit')) openEditor(c);
+    };
+    pads.appendChild(el);
+  }
+}
+async function play(id, el) {
+  try {
+    // The browser preview is a separate audio path from the soundboard output,
+    // so it has to be stopped explicitly or you hear both at once.
+    stopPreview();
+    await api(`/api/clips/${id}/play`, {method:'POST'});
+    if (el) { el.classList.add('fired'); setTimeout(()=>el.classList.remove('fired'), 600); }
+    loadClips();
+  } catch (e) { alert('Play failed: ' + e.message); }
+}
+
+$('#sortBy').onchange = e => {
+  sortBy = e.target.value;
+  localStorage.setItem('sb_sort', sortBy);
+  loadClips();
+};
+$('#search').oninput = loadClips;
+$('#search').onkeydown = e => {
+  if (e.key === 'Enter' && clips.length) play(clips[0].id, $('#pads').firstChild);
+};
+
+// ---------- upload ----------
+const drop = $('#drop');
+drop.onclick = () => $('#file').click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); upload(e.dataTransfer.files); };
+$('#file').onchange = e => upload(e.target.files);
+
+async function upload(files) {
+  if (!files.length) return;
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  $('#uploadMsg').textContent = `Uploading ${files.length}…`;
+  try {
+    const r = await api('/api/upload', {method:'POST', body:fd});
+    $('#uploadMsg').textContent =
+      `Added ${r.added.length}` + (r.failed.length ? `, ${r.failed.length} failed` : '');
+    loadClips();
+  } catch (e) { $('#uploadMsg').textContent = 'Upload failed: ' + e.message; }
+}
+
+// ---------- editor ----------
+let trim = {peaks: [], dur: 0, start: 0, end: 0};
+
+// Volume is stored as a linear multiplier but edited in dB: equal steps sound
+// equal, which a linear 0-200% slider does not.
+const gainToDb = g => (g > 0 ? 20 * Math.log10(g) : -24);
+const dbToGain = db => (db <= -24 ? 0 : Math.pow(10, db / 20));
+
+function setGainDb(db) {
+  db = Math.max(-24, Math.min(12, db));
+  $('#edGain').value = db;
+  $('#gainVal').textContent =
+    db <= -24 ? 'muted' : (db > 0 ? '+' : '') + db.toFixed(1) + ' dB';
+  // Keep the trim preview at the level the clip will actually play at.
+  if (previewAudio) previewAudio.volume = Math.min(1, dbToGain(db));
+}
+
+$('#edGain').oninput = e => setGainDb(parseFloat(e.target.value));
+$('#gainReset').onclick = () => setGainDb(0);
+
+function drawWave() {
+  const cv = $('#wave'), ratio = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * ratio; cv.height = h * ratio;
+  const g = cv.getContext('2d');
+  g.setTransform(ratio, 0, 0, ratio, 0, 0);
+  g.clearRect(0, 0, w, h);
+
+  const n = trim.peaks.length, mid = h / 2;
+  const x0 = (trim.start / trim.dur) * w, x1 = (trim.end / trim.dur) * w;
+
+  // Dim the regions that will not play, so the kept part reads at a glance.
+  g.fillStyle = 'rgba(0,0,0,.45)';
+  g.fillRect(0, 0, x0, h); g.fillRect(x1, 0, w - x1, h);
+
+  for (let i = 0; i < n; i++) {
+    const x = (i / n) * w, amp = trim.peaks[i] * (h / 2 - 3);
+    g.fillStyle = (x >= x0 && x <= x1) ? '#5aa9ff' : '#3c4655';
+    g.fillRect(x, mid - amp, Math.max(1, w / n - 0.5), amp * 2 || 1);
+  }
+}
+
+function paintHandles() {
+  const w = $('#wave').clientWidth;
+  $('#hStart').style.left = (trim.start / trim.dur) * w + 'px';
+  $('#hEnd').style.left = (trim.end / trim.dur) * w + 'px';
+  $('#tStart').textContent = trim.start.toFixed(2) + 's';
+  $('#tEnd').textContent = trim.end.toFixed(2) + 's';
+  $('#tLen').textContent = (trim.end - trim.start).toFixed(2) + 's kept';
+  drawWave();
+}
+
+// ---- audio scrubbing -------------------------------------------------
+// Trimming without hearing it is guesswork, so the editor keeps one <audio>
+// element loaded for the clip and every interaction plays through it. Stops
+// are driven by a rAF loop rather than `timeupdate`, which only fires ~4x a
+// second and would overshoot an edge preview by a visible margin.
+let previewAudio = null, stopAt = null, rafId = null;
+
+function ensureAudio() {
+  if (!previewAudio || previewAudio.dataset.clip !== editing.id) {
+    if (previewAudio) previewAudio.pause();
+    previewAudio = new Audio(`/api/clips/${editing.id}/audio`);
+    previewAudio.dataset.clip = editing.id;
+    previewAudio.preload = 'auto';
+  }
+  return previewAudio;
+}
+
+function playRange(from, to) {
+  stopPreview();               // exactly one preview, always
+  const a = ensureAudio();
+  stopAt = to;
+  a.volume = Math.min(1, dbToGain(parseFloat($('#edGain').value)));
+  a.currentTime = Math.max(0, from);
+  a.play().catch(() => {});
+  $('#playhead').style.display = 'block';
+  cancelAnimationFrame(rafId);
+  const tick = () => {
+    if (a.paused) { $('#playhead').style.display = 'none'; return; }
+    if (stopAt != null && a.currentTime >= stopAt) {
+      a.pause();
+      $('#playhead').style.display = 'none';
+      return;
+    }
+    const w = $('#wave').clientWidth;
+    $('#playhead').style.left = (a.currentTime / trim.dur) * w + 'px';
+    rafId = requestAnimationFrame(tick);
+  };
+  rafId = requestAnimationFrame(tick);
+}
+
+function stopPreview() {
+  if (previewAudio) previewAudio.pause();
+  cancelAnimationFrame(rafId);
+  $('#playhead').style.display = 'none';
+}
+
+// Click anywhere to hear from there, running to the end of the kept region
+// (or the end of the file if you click past it).
+$('#wave').onpointerdown = e => {
+  const rect = $('#wave').getBoundingClientRect();
+  const t = ((e.clientX - rect.left) / rect.width) * trim.dur;
+  playRange(t, t < trim.end ? trim.end : trim.dur);
+};
+
+const EDGE_PREVIEW_S = 1.2;   // how much context to play either side of a cut
+
+function dragHandle(el, which) {
+  el.onpointerdown = e => {
+    e.preventDefault();
+    e.stopPropagation();          // don't also trigger the waveform's seek
+    stopPreview();
+    el.setPointerCapture(e.pointerId);
+    const rect = $('#wave').getBoundingClientRect();
+    const move = ev => {
+      let t = ((ev.clientX - rect.left) / rect.width) * trim.dur;
+      t = Math.max(0, Math.min(trim.dur, t));
+      // Keep at least 50 ms between handles; the server rejects less anyway.
+      if (which === 'start') trim.start = Math.min(t, trim.end - 0.05);
+      else trim.end = Math.max(t, trim.start + 0.05);
+      paintHandles();
+      $('#edFinished').checked = true;
+    };
+    el.onpointermove = move;
+    el.onpointerup = () => {
+      el.onpointermove = null;
+      // Play the edge you just moved, so you hear whether the cut lands in the
+      // right place without hunting for a play button.
+      if (which === 'start') {
+        playRange(trim.start, Math.min(trim.end, trim.start + EDGE_PREVIEW_S));
+      } else {
+        playRange(Math.max(trim.start, trim.end - EDGE_PREVIEW_S), trim.end);
+      }
+    };
+  };
+}
+dragHandle($('#hStart'), 'start');
+dragHandle($('#hEnd'), 'end');
+
+// Space toggles the trimmed region, but only while the editor is open and not
+// while typing a trigger phrase.
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' || !$('#editor').open) return;
+  if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+  e.preventDefault();
+  if (previewAudio && !previewAudio.paused) stopPreview();
+  else playRange(trim.start, trim.end);
+});
+
+async function loadWave(c) {
+  const w = await api(`/api/clips/${c.id}/waveform`);
+  trim.peaks = w.peaks;
+  trim.dur = w.duration || c.duration || 1;
+  trim.start = c.start || 0;
+  trim.end = (c.end == null ? trim.dur : c.end);
+  paintHandles();
+}
+
+function openEditor(c) {
+  editing = c;
+  $('#edTitle').textContent = c.name;
+  $('#edName').value = c.name;
+  $('#edTriggers').value = c.triggers.join('\n');
+  $('#edTags').value = c.tags.join(', ');
+  $('#edThreshold').value = c.threshold ?? '';
+  $('#edRandom').checked = !!c.random_ok;
+  $('#edFinished').checked = !!c.finished;
+  $('#edSource').value = c.source || '';
+  setGainDb(gainToDb(c.gain ?? 1));
+  stopPreview();
+  $('#editor').showModal();
+  loadWave(c);          // after showModal, so the canvas has a real width
+}
+$('#edCancel').onclick = () => { stopPreview(); $('#editor').close(); };
+$('#edPreview').onclick = () => playRange(trim.start, trim.end);
+async function saveClip() {
+  return api(`/api/clips/${editing.id}`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      name: $('#edName').value,
+      triggers: $('#edTriggers').value.split('\n'),
+      tags: $('#edTags').value.split(','),
+      threshold: $('#edThreshold').value.trim() || null,
+      random_ok: $('#edRandom').checked,
+      gain: dbToGain(parseFloat($('#edGain').value)),
+      finished: $('#edFinished').checked,
+      source: $('#edSource').value || null,
+      start: trim.start,
+      // Full-length stays null rather than an explicit end, so re-importing or
+      // replacing the file later does not leave a stale hard bound behind.
+      end: trim.end >= trim.dur - 0.01 ? null : trim.end,
+    })});
+}
+
+$('#edSave').onclick = async () => {
+  try {
+    await saveClip();
+  } catch (e) {
+    alert('Save failed: ' + e.message);
+    return;
+  }
+  stopPreview();
+  $('#editor').close();
+  await loadSources();
+  loadClips();
+};
+// Save the current edits first, then branch: otherwise the trim you just
+// dragged would be lost, and the copy would inherit the OLD bounds.
+$('#edDuplicate').onclick = async () => {
+  await saveClip();
+  const copy = await api(`/api/clips/${editing.id}/duplicate`, {method:'POST'});
+  await loadClips();
+  const fresh = clips.find(c => c.id === copy.id) || copy;
+  openEditor(fresh);
+};
+
+$('#edDelete').onclick = async () => {
+  if (!confirm(`Delete "${editing.name}"? This removes the file.`)) return;
+  await api(`/api/clips/${editing.id}`, {method:'DELETE'});
+  $('#editor').close(); loadClips();
+};
+
+// ---------- auto / status ----------
+$('#autoBtn').onclick = async () => {
+  const s = await api('/api/auto', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({enabled: !cfg.auto_enabled})});
+  cfg.auto_enabled = s.auto_enabled; paintAuto(s);
+};
+$('#stopBtn').onclick = () => { stopPreview(); api('/api/stop', {method:'POST'}); };
+
+function paintAuto(s) {
+  $('#autoBtn').textContent = 'Auto: ' + (s.auto_enabled ? 'ON' : 'off');
+  $('#autoBtn').classList.toggle('on', s.auto_enabled);
+  const b = s.budget || {};
+  const bEl = $('#budget');
+  if (b.limit > 0) {
+    bEl.textContent = `${b.used}/${b.limit} per ${Math.round(b.window_s/60)}m`;
+    bEl.className = 'pill' + (b.used >= b.limit ? ' bad' : '');
+  } else { bEl.textContent = 'no limit'; bEl.className = 'pill'; }
+
+  const r = s.random || {};
+  $('#randInfo').textContent = !r.enabled
+    ? `${r.eligible || 0} clip(s) whitelisted`
+    : (r.eligible ? `on · drawing from ${r.eligible} clip(s)`
+                  : 'ON but nothing is whitelisted — tick "Include in random drops" on some clips');
+
+  // Level meters: proof the listener is receiving audio even when nobody is
+  // speaking. Without this, "silent room" and "wrong device" look the same.
+  const caps0 = (s.listener || {}).captures || [];
+  const mb = $('#meters');
+  if (mb.childElementCount !== caps0.length) {
+    mb.innerHTML = caps0.map(c =>
+      `<div class="meter"><span class="nm"></span>
+        <span class="bar"><span class="fill"></span></span>
+        <span class="db"></span></div>`).join('');
+  }
+  caps0.forEach((c, i) => {
+    const el = mb.children[i];
+    if (!el) return;
+    el.querySelector('.nm').textContent = c.source;
+    el.title = c.device || '';
+    // -60 dB floor: quiet room reads near zero, speech fills most of the bar.
+    const pct = Math.max(0, Math.min(100, (c.peak_db + 60) / 60 * 100));
+    el.querySelector('.fill').style.width = pct + '%';
+    el.querySelector('.db').textContent =
+      c.peak_db <= -119 ? 'silent' : c.peak_db.toFixed(0) + ' dB';
+    el.classList.toggle('dead', !c.healthy);
+  });
+
+  const l = s.listener || {};
+  const caps = l.captures || [];
+  const bad = caps.filter(c => !c.healthy);
+  const h = $('#health');
+  if (!l.running) { h.className = 'pill'; h.textContent = 'listener off'; }
+  else if (bad.length) { h.className = 'pill bad';
+    h.textContent = bad.map(c => `${c.source}: NO AUDIO`).join(' · '); }
+  else { h.className = 'pill ok';
+    h.textContent = caps.length
+      ? caps.map(c => c.source).join(' + ') + ' listening'
+      : 'no inputs selected'; }
+  h.title = l.model || '';
+}
+
+// ---------- feed ----------
+async function pollFeed() {
+  try {
+    const evs = await api('/api/events?since=' + since);
+    for (const e of evs) {
+      since = Math.max(since, e.at);
+      const d = document.createElement('div');
+      d.className = 'ev' + (e.fired ? ' fire' : '') + (e.kind === 'error' ? ' err' : '');
+      const t = new Date(e.at * 1000).toLocaleTimeString();
+      if (e.kind === 'heard') {
+        const scoreTxt = e.best != null ? ` <span class="sc">${e.best}</span>` : '';
+        const note = e.note ? ` <span class="src">(${e.note})</span>` : '';
+        d.innerHTML = `<span class="src">${t} ${e.source}·</span> ` +
+          escapeHtml(e.text) + scoreTxt + note +
+          (e.fired ? ` → <b>${escapeHtml(e.fired)}</b>` : '');
+      } else {
+        d.innerHTML = `<span class="src">${t}</span> ${escapeHtml(e.text)}`;
+      }
+      $('#feed').prepend(d);
+    }
+    while ($('#feed').childElementCount > 200) $('#feed').lastChild.remove();
+  } catch {}
+}
+// Sentinel names for "whatever Windows is defaulting to", stored as device:null
+const DEFAULT_LABEL = loop => loop ? '__default_output__' : '__default_input__';
+const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+// ---------- settings ----------
+async function loadCfg() {
+  const cached = localStorage.getItem(CFG_KEY);
+  if (cached) {
+    try {
+      const c = JSON.parse(cached);
+      $('#threshold').value = c.listen.threshold;
+      $('#thVal').textContent = c.listen.threshold;
+    } catch {}
+  }
+  cfg = await api('/api/config');
+  const devs = await api('/api/devices');
+
+  $('#threshold').value = cfg.listen.threshold;
+  $('#thVal').textContent = cfg.listen.threshold;
+  $('#randomOn').checked = !!cfg.random.enabled;
+  $('#randMin').value = cfg.random.min_minutes;
+  $('#randMax').value = cfg.random.max_minutes;
+  $('#budgetCount').value = cfg.listen.budget_count;
+  $('#budgetWindow').value = Math.round(cfg.listen.budget_window_s / 60);
+  // Inputs: real capture devices, plus every output offered as a loopback
+  // so "what the game is saying" is just another box to tick.
+  const inBox = $('#inputs');
+  inBox.innerHTML = '';
+  const chosen = cfg.listen.inputs || [];
+  const isOn = (name, loop) => chosen.some(i =>
+    !!i.loopback === loop && (i.device === null
+      ? name === DEFAULT_LABEL(loop)
+      : name.toLowerCase().includes(String(i.device).toLowerCase())));
+
+  const addInput = (name, loop, label) => {
+    const id = 'in_' + (loop ? 'L' : 'M') + name.replace(/\W/g, '');
+    inBox.insertAdjacentHTML('beforeend',
+      `<div class="row"><input type="checkbox" id="${id}" class="inp"
+         data-name="${escapeHtml(name)}" data-loop="${loop ? 1 : 0}"
+         ${isOn(name, loop) ? 'checked' : ''}>
+       <label for="${id}" style="margin:0;color:var(--text)">${escapeHtml(label)}</label></div>`);
+  };
+
+  const heading = t => inBox.insertAdjacentHTML('beforeend',
+    `<div style="color:var(--dim);font-size:11px;text-transform:uppercase;
+      letter-spacing:.06em;margin:10px 0 4px">${t}</div>`);
+
+  heading('Desktop audio');
+  addInput(DEFAULT_LABEL(true), true, 'Desktop audio (follows default output)');
+  const seenIn = new Set();
+  for (const d of devs.outputs) {
+    if (seenIn.has('L' + d.name)) continue;
+    seenIn.add('L' + d.name);
+    addInput(d.name, true, d.name);
+  }
+
+  heading('Microphones');
+  addInput(DEFAULT_LABEL(false), false, 'Default microphone');
+  for (const d of devs.inputs) {
+    if (seenIn.has(d.name)) continue;
+    seenIn.add(d.name);
+    addInput(d.name, false, d.name);
+  }
+
+  const seen = new Set(), box = $('#outputs');
+  // (cfgReady is set at the end of this function, once every control exists)
+  box.innerHTML = '';
+  for (const d of devs.outputs) {
+    if (seen.has(d.name)) continue;      // MME/DirectSound/WASAPI list dupes
+    seen.add(d.name);
+    const on = cfg.outputs.some(o => d.name.toLowerCase().includes(o.toLowerCase()));
+    const id = 'out_' + d.index;
+    box.insertAdjacentHTML('beforeend',
+      `<div class="row"><input type="checkbox" id="${id}" data-name="${escapeHtml(d.name)}"
+        ${on ? 'checked' : ''}><label for="${id}" style="margin:0;color:var(--text)"
+        >${escapeHtml(d.name)}</label></div>`);
+  }
+  // Only now is every control painted from the server, so saving reflects
+  // real state rather than a half-built panel.
+  cfgReady = true;
+}
+// ---- settings: auto-saved, and mirrored to localStorage ------------------
+// Server config.json is the source of truth, but it is a round-trip away. The
+// localStorage copy is painted first so the panel never flashes stale values
+// on load, and it survives if the server is briefly down.
+const CFG_KEY = 'sb_cfg';
+// Nothing may save until the panel has actually been painted from the server.
+// Without this, an early change event serialises a half-built DOM and writes
+// empty device lists over a good config -- which is exactly what happened.
+let cfgReady = false;
+
+function readPanel() {
+  return {
+    outputs: [...document.querySelectorAll('#outputs input:checked')]
+      .map(i => i.dataset.name),
+    listen: {
+      inputs: [...document.querySelectorAll('.inp:checked')].map(i => ({
+        device: i.dataset.name.startsWith('__default') ? null : i.dataset.name,
+        loopback: i.dataset.loop === '1',
+      })),
+      threshold: parseFloat($('#threshold').value),
+      budget_count: parseInt($('#budgetCount').value, 10) || 0,
+      budget_window_s: (parseFloat($('#budgetWindow').value) || 5) * 60,
+    },
+  };
+}
+
+let saveTimer = null;
+function saveSettings() {
+  if (!cfgReady) return;
+  // Debounced: dragging the threshold slider fires continuously, and one
+  // PATCH per pixel would restart the listener repeatedly.
+  clearTimeout(saveTimer);
+  $('#cfgStatus').textContent = 'Saving…';
+  saveTimer = setTimeout(async () => {
+    const panel = readPanel();
+    localStorage.setItem(CFG_KEY, JSON.stringify(panel));
+    try {
+      cfg = await api('/api/config', {method:'PATCH',
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify(panel)});
+      await api('/api/random', {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          enabled: $('#randomOn').checked,
+          min_minutes: parseFloat($('#randMin').value) || 4,
+          max_minutes: parseFloat($('#randMax').value) || 8,
+        })});
+      $('#cfgStatus').textContent = 'Saved.';
+      refresh();
+    } catch (e) {
+      $('#cfgStatus').textContent = 'Save failed: ' + e.message;
+    }
+  }, 500);
+}
+
+// Any control in the settings panel persists itself.
+document.querySelector('aside').addEventListener('change', e => {
+  if (e.target.closest('section') && e.target.id !== 'file') saveSettings();
+});
+$('#threshold').oninput = e => {
+  $('#thVal').textContent = e.target.value;
+  saveSettings();
+};
+for (const id of ['budgetCount','budgetWindow','randMin','randMax']) {
+  $('#' + id).oninput = saveSettings;
+}
+
+async function refresh() { paintAuto(await api('/api/status')); }
+loadSources().then(loadClips); loadCfg(); refresh();
+setInterval(pollFeed, 1000);
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Web + API
+flask
+
+# Audio playback (low-latency callback model) and capture
+sounddevice
+soundfile
+soundcard          # WASAPI loopback; sounddevice cannot do it
+numpy
+
+# Transcription for auto mode
+faster-whisper
+
+# CUDA runtime libraries for faster-whisper on NVIDIA GPUs.
+# run.cmd puts these on PATH before Python starts -- os.add_dll_directory()
+# from inside Python is not sufficient. Without them it falls back to CPU.
+nvidia-cublas-cu12
+nvidia-cudnn-cu12

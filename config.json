@@ -1,0 +1,40 @@
+{
+  "outputs": [
+    "Speakers (Realtek(R) Audio)"
+  ],
+  "master_gain": 1.0,
+  "allow_overlap": false,
+  "listen": {
+    "inputs": [
+      {
+        "device": null,
+        "loopback": true
+      },
+      {
+        "device": "Microphone (NVIDIA Broadcast)",
+        "loopback": false
+      }
+    ],
+    "model": "small.en",
+    "compute_type": "float16",
+    "device": "cuda",
+    "chunk_s": 3.0,
+    "threshold": 0.82,
+    "cooldown_s": 180.0,
+    "global_cooldown_s": 2.0,
+    "min_words": 2,
+    "short_line_threshold": 0.95,
+    "budget_count": 10,
+    "budget_window_s": 300
+  },
+  "auto_enabled": false,
+  "random": {
+    "enabled": false,
+    "min_minutes": 4.0,
+    "max_minutes": 8.0,
+    "use_budget": true
+  },
+  "nas_inbox": "//192.168.1.169/media/soundboard/inbox",
+  "nas_poll_s": 20,
+  "port": 8770
+}

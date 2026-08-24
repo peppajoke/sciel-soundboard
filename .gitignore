@@ -1,0 +1,20 @@
+# Python environment: 2.3 GB, machine-specific, and rebuilt by setup.
+# This is the one thing that must never go in the repo.
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime noise
+logs/
+*.tmp
+*.json.tmp
+
+# Whisper model cache (re-downloads on first run)
+.cache/
+
+# NOT ignored, deliberately:
+#   clips/            the soundboard audio itself (~130 MB)
+#   clips/_originals/ the untouched uploads
+#   library.json      names, trim points, triggers, sources
+#   config.json       device and behaviour settings
+# Jack wants a clone to be a working soundboard, not just the code.
