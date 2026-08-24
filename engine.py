@@ -97,8 +97,7 @@ class Engine:
             raise FileNotFoundError(clip.path)
 
         self.player.play(clip.path, gain=clip.gain,
-                         start=clip.start, end=clip.end,
-                         exclusive=not self.cfg.get("allow_overlap", False))
+                         start=clip.start, end=clip.end)
         with self._lock:
             now = time.time()
             self._last_fire_at = now

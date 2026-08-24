@@ -115,8 +115,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 3,
-      "last_played": 1787546439.5768297,
+      "plays": 4,
+      "last_played": 1787583574.1508095,
       "finished": true,
       "added_at": 1787538912.0169523
     },
@@ -601,8 +601,8 @@
       "random_ok": false,
       "source": null,
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583515.7720544,
       "finished": true,
       "added_at": 1787540883.2873216
     },
@@ -732,7 +732,10 @@
       "id": "nfl-theme-cfcafb",
       "name": "NFL Theme",
       "file": "nfl-theme-cfcafb.wav",
-      "triggers": [],
+      "triggers": [
+        "great play",
+        "great move"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 45.024,
@@ -791,17 +794,20 @@
       "id": "duel-of-the-fates-eebce3",
       "name": "Duel of the Fates",
       "file": "duel-of-the-fates-eebce3.wav",
-      "triggers": [],
+      "triggers": [
+        "prepare for battle",
+        "boss battle time"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 45.024,
       "start": 0.0,
-      "end": null,
+      "end": 7.522,
       "random_ok": false,
       "source": "star-wars-de06",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583578.846688,
       "finished": true,
       "added_at": 1787583157.1275167
     },
@@ -827,7 +833,10 @@
       "id": "pornhub-intro-40a70e",
       "name": "Pornhub intro",
       "file": "pornhub-intro-40a70e.wav",
-      "triggers": [],
+      "triggers": [
+        "gooning",
+        "porn"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 3.024,
@@ -836,8 +845,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583473.184563,
       "finished": true,
       "added_at": 1787583157.4455473
     },
@@ -866,8 +875,7 @@
       "name": "Sneaky Snitch",
       "file": "sneaky-snitch-ef6d4a.wav",
       "triggers": [
-        "sneaky",
-        "up to something"
+        "I wonder if we could"
       ],
       "tags": [],
       "threshold": null,
@@ -877,8 +885,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583538.587524,
       "finished": true,
       "added_at": 1787583158.3747978
     },
@@ -897,8 +905,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583618.2580254,
       "finished": true,
       "added_at": 1787583158.5301437
     },
@@ -907,18 +915,21 @@
       "name": "Rizz",
       "file": "rizz-905b63.wav",
       "triggers": [
-        "rizz"
+        "rizz",
+        "horny",
+        "sexy",
+        "romantic"
       ],
       "tags": [],
       "threshold": null,
       "duration": 45.024,
       "start": 0.0,
-      "end": null,
+      "end": 6.882,
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583679.0346017,
       "finished": true,
       "added_at": 1787583159.5519447
     },
@@ -946,7 +957,10 @@
       "id": "scary-tiktok-music-33b350",
       "name": "Scary TikTok music",
       "file": "scary-tiktok-music-33b350.wav",
-      "triggers": [],
+      "triggers": [
+        "creeping me out",
+        "creepy"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 10.032,
@@ -955,8 +969,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583483.8073814,
       "finished": true,
       "added_at": 1787583159.9985747
     },
@@ -976,8 +990,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583553.834379,
       "finished": true,
       "added_at": 1787583160.2719133
     },
@@ -985,7 +999,9 @@
       "id": "vine-boom-5dea35",
       "name": "Vine boom",
       "file": "vine-boom-5dea35.wav",
-      "triggers": [],
+      "triggers": [
+        "I can't believe it"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 1.344,
@@ -994,8 +1010,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583562.098591,
       "finished": true,
       "added_at": 1787583160.3952727
     },
@@ -1014,8 +1030,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583433.7435863,
+      "plays": 2,
+      "last_played": 1787583623.016729,
       "finished": true,
       "added_at": 1787583160.5265596
     },
@@ -1034,8 +1050,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583513.904444,
       "finished": true,
       "added_at": 1787583160.662938
     },
@@ -1062,8 +1078,7 @@
       "name": "It was at this moment he knew he fucked up",
       "file": "it-was-at-this-moment-he-knew-he-fucked-up-25a52c.wav",
       "triggers": [
-        "it was at this moment",
-        "he knew he fucked up"
+        "oh no no no"
       ],
       "tags": [],
       "threshold": null,
@@ -1073,8 +1088,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583522.1741414,
       "finished": true,
       "added_at": 1787583161.0147643
     },
@@ -1109,8 +1124,8 @@
       "random_ok": false,
       "source": "spongebob-49e0",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583511.0241454,
       "finished": true,
       "added_at": 1787583161.2819595
     },
@@ -1118,17 +1133,21 @@
       "id": "miaw-miaw-miaw-sad-song-3319b0",
       "name": "Miaw miaw miaw (sad song)",
       "file": "miaw-miaw-miaw-sad-song-3319b0.wav",
-      "triggers": [],
+      "triggers": [
+        "sad cat",
+        "poor kitty",
+        "kittens"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 45.024,
       "start": 0.0,
-      "end": null,
+      "end": 6.562,
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583625.114079,
       "finished": true,
       "added_at": 1787583162.3010468
     },
@@ -1137,7 +1156,7 @@
       "name": "I am going to touch you",
       "file": "i-am-going-to-touch-you-f42655.wav",
       "triggers": [
-        "i am going to touch you"
+        "touch you"
       ],
       "tags": [],
       "threshold": null,
@@ -1147,8 +1166,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583456.6433809,
       "finished": true,
       "added_at": 1787583162.4381247
     },
@@ -1183,8 +1202,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583519.7158692,
       "finished": true,
       "added_at": 1787583162.8145738
     },
@@ -1223,8 +1242,8 @@
       "random_ok": false,
       "source": "wwe-966f",
       "gain": 1.0,
-      "plays": 1,
-      "last_played": 1787583395.9804451,
+      "plays": 2,
+      "last_played": 1787583724.7564516,
       "finished": true,
       "added_at": 1787583163.2825134
     },
@@ -1274,7 +1293,9 @@
       "id": "plain-8-bit-blip-e4d95c",
       "name": "Plain 8-bit blip",
       "file": "plain-8-bit-blip-e4d95c.wav",
-      "triggers": [],
+      "triggers": [
+        "leveled up"
+      ],
       "tags": [],
       "threshold": null,
       "duration": 1.802,
@@ -1283,8 +1304,8 @@
       "random_ok": false,
       "source": "memes-sfx-1509",
       "gain": 1.0,
-      "plays": 0,
-      "last_played": 0.0,
+      "plays": 1,
+      "last_played": 1787583464.7288148,
       "finished": true,
       "added_at": 1787583173.4016266
     }

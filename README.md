@@ -206,9 +206,10 @@ handful you actually picked.
 
 ## One sound at a time
 
-A new clip cuts whatever is still playing rather than stacking on it, and any
-trim preview stops the moment a real clip fires. Set `allow_overlap: true` in
-`config.json` if you ever want clips to layer.
+A new clip always cuts whatever is still playing. Two soundbites at once is
+noise, not comedy, so there is deliberately **no setting to turn this off** —
+the mixer holds at most one voice per device by construction. Any trim preview
+also stops the moment a real clip fires.
 
 ## Latency
 

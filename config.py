@@ -15,9 +15,6 @@ DEFAULTS = {
     # one entry covers both. Add your headphones here to monitor yourself.
     "outputs": ["Voicemeeter Input (VB-Audio Voicemeeter VAIO)"],
     "master_gain": 1.0,
-    # False (default): a new clip cuts the one still playing. Set true to let
-    # clips stack.
-    "allow_overlap": False,
 
     "listen": {
         # Capture list, mirroring `outputs`: every entry gets its own stream and
@@ -109,7 +106,7 @@ def _migrate(cfg: dict) -> dict:
 
 def load() -> dict:
     if CONFIG_PATH.exists():
-        stored = _migrate(json.loads(CONFIG_PATH.read_text(encoding="utf-8")))
+        stored = _migrate(json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig")))
         merged = _merge(DEFAULTS, stored)
         # _merge would union the default inputs with the stored ones for a
         # dict, but inputs is a LIST and must be taken wholesale -- otherwise

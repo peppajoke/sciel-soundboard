@@ -88,10 +88,6 @@ class _Sink:
         np.clip(mix, -1.0, 1.0, out=mix)
         outdata[:] = mix
 
-    def add(self, data: np.ndarray, gain: float) -> None:
-        with self.lock:
-            self.voices.append(_Voice(data, gain))
-
     def replace(self, data: np.ndarray, gain: float) -> None:
         with self.lock:
             self.voices = [_Voice(data, gain)]
@@ -144,8 +140,7 @@ class Player:
         return cached
 
     def play(self, path: Path, gain: float = 1.0,
-             start: float = 0.0, end: float | None = None,
-             exclusive: bool = True) -> None:
+             start: float = 0.0, end: float | None = None) -> None:
         """Play `path`, optionally only the [start, end) window of it.
 
         Slicing happens here rather than on disk so the stored file is never
@@ -162,14 +157,11 @@ class Player:
         if not self._sinks:
             raise RuntimeError("no output devices open: " + "; ".join(self.errors))
         for sink in self._sinks:
-            # Exclusive is the default: a new clip cuts whatever was playing,
-            # rather than stacking on top of it. Two soundbites at once is
-            # noise, not comedy. Clearing and adding under the sink's lock
-            # keeps the swap atomic so no block is ever mixed from both.
-            if exclusive:
-                sink.replace(data, gain)
-            else:
-                sink.add(data, gain)
+            # ONE SOUND AT A TIME, always. A new clip cuts whatever was
+            # playing; there is deliberately no option to stack, because two
+            # soundbites at once is noise rather than comedy. The swap happens
+            # under the sink's lock so no audio block is ever mixed from both.
+            sink.replace(data, gain)
 
     def preload(self, paths) -> int:
         """Decode clips into the sample cache ahead of time.

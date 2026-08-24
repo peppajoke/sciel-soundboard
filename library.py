@@ -118,7 +118,7 @@ class Library:
         # wait until clips are in memory or save() would truncate them.
         self._seeded = False
         if INDEX.exists():
-            raw = json.loads(INDEX.read_text(encoding="utf-8"))
+            raw = json.loads(INDEX.read_text(encoding="utf-8-sig"))
             if "sources" in raw:
                 self.sources = {s["id"]: Source(**s) for s in raw["sources"]}
             else:
