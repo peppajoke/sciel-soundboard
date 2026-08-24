@@ -91,9 +91,10 @@ def stitch(tail: list[str], new: list[str], max_words: int = 60) -> list[str]:
     window boundary is invisible. Stitching produces one continuous sequence
     to match against instead.
 
-    Overlap is found by the longest suffix of `tail` that is also a prefix of
-    `new`. Longest-first matters: with repeated words, a short match would
-    leave duplicates behind ("fuck fuck fuck fuck").
+    Overlap is measured by matching word BLOCKS between the end of `tail` and
+    the start of `new` (see below), consuming as much of `new` as the match
+    spans. As much as possible matters: with repeated words, a short match
+    would leave duplicates behind ("fuck fuck fuck fuck").
     """
     if not tail:
         return new[-max_words:]
@@ -109,15 +110,31 @@ def stitch(tail: list[str], new: list[str], max_words: int = 60) -> list[str]:
     # Block matching survives a changed token in the middle.
     zone = tail[-len(new):] if len(tail) > len(new) else tail
     sm = SequenceMatcher(None, zone, new, autojunk=False)
-    match = sm.find_longest_match(0, len(zone), 0, len(new))
+    blocks = [b for b in sm.get_matching_blocks() if b.size]
 
-    # Credible overlap: the matching block runs to (near) the end of the tail
-    # and starts at (near) the beginning of the new text. Anything else is
-    # genuinely new speech that happens to share a word.
-    if (match.size >= 1
-            and match.a + match.size >= len(zone) - 1
-            and match.b <= 1):
-        return (tail + new[match.b + match.size:])[-max_words:]
+    # Credible overlap: the matching blocks run to (near) the end of the tail,
+    # and most of the words of `new` they span are matching ones. Anything
+    # else is genuinely new speech that happens to share a word.
+    #
+    # Judged across ALL the blocks, not the longest one alone: a word
+    # re-decoded in the MIDDLE of the window splits the overlap in two, and
+    # the longest half then neither reaches the end of the tail nor starts at
+    # the beginning of `new`, so the overlap was rejected and the whole window
+    # appended a second time -- "are you doing right now are you doin right
+    # now". That is the doubling this function exists to prevent. The LAST
+    # block that reaches the tail's end measures the overlap across the
+    # re-decoded token instead.
+    end = next((b for b in reversed(blocks)
+                if b.a + b.size >= len(zone) - 1), None)
+    if end is not None:
+        take = end.b + end.size         # words of `new` already in `tail`
+        # A single word shared by coincidence also "reaches the tail's end",
+        # so require the spanned stretch to be mostly matching, not mostly
+        # new words -- otherwise unrelated speech starting a few words before
+        # a repeat of the tail's last word would lose those words.
+        matched = sum(b.size for b in blocks if b.b + b.size <= take)
+        if matched * 2 >= take:
+            return (tail + new[take:])[-max_words:]
 
     # No overlap: a gap in speech, or whisper changed its mind entirely.
     return (tail + new)[-max_words:]

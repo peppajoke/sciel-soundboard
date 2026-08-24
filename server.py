@@ -53,10 +53,15 @@ def watch_nas(stop: threading.Event):
     half-written file yields a truncated clip with no error.
     """
     seen: dict[str, int] = {}
+    # name -> the size that failed to import. See the failure handler below.
+    failed: dict[str, int] = {}
     while not stop.is_set():
-        inbox = Path(engine.cfg.get("nas_inbox", ""))
+        inbox = Path(engine.cfg.get("nas_inbox") or "")
         try:
-            if inbox.exists():
+            # An empty setting becomes Path("."), i.e. the app's own folder --
+            # which would then be scanned and its files MOVED into _imported.
+            # No inbox configured has to mean "do nothing", not "import here".
+            if str(inbox) not in ("", ".") and inbox.exists():
                 done = inbox / "_imported"
                 for src in inbox.iterdir():
                     if not src.is_file() or src.suffix.lower() not in AUDIO_EXTS:
@@ -68,6 +73,16 @@ def watch_nas(stop: threading.Event):
                     if src.name.startswith("._") or src.name.startswith("."):
                         continue
                     size = src.stat().st_size
+                    # Already failed at exactly this size: leave it alone until
+                    # the file itself changes. Marking it inside `seen` did not
+                    # work -- the stability check overwrote the mark with the
+                    # real size on the very next poll, so a bad file was
+                    # retried forever. Worse, a failure AFTER import_file
+                    # succeeded (the move out of the inbox is the likely one on
+                    # SMB) added a fresh clip and a fresh transcode on every
+                    # retry, growing the library without bound.
+                    if failed.get(src.name) == size:
+                        continue
                     if seen.get(src.name) != size:
                         seen[src.name] = size       # still growing; wait a tick
                         continue
@@ -76,13 +91,14 @@ def watch_nas(stop: threading.Event):
                         done.mkdir(exist_ok=True)
                         shutil.move(str(src), str(done / src.name))
                         seen.pop(src.name, None)
+                        failed.pop(src.name, None)
                         engine.warm_cache()
                         engine._event("info", f"imported from NAS: {clip.name}")
                         log.info("imported from NAS: %s", clip.name)
                     except Exception as exc:
                         log.error("NAS import failed for %s: %s", src.name, exc)
                         engine._event("error", f"NAS import failed: {src.name}: {exc}")
-                        seen[src.name] = -1          # don't retry every poll
+                        failed[src.name] = size      # don't retry until it changes
         except Exception as exc:
             log.warning("NAS inbox unreachable: %s", exc)
         stop.wait(float(engine.cfg.get("nas_poll_s", 20)))
@@ -114,7 +130,12 @@ def list_clips():
     items = engine.library.search(q, request.args.get("sort", "name"))
     source = request.args.get("source")
     if source == "none":
-        items = [c for c in items if not c.source]
+        # "Unassigned" has to mean the same thing here as it does in
+        # source_counts(), which counts a clip pointing at a source that no
+        # longer exists as unassigned. Testing `not c.source` alone left those
+        # clips out of the view while still counting them on the tab, so the
+        # "No source" pill showed a number you could not reach.
+        items = [c for c in items if c.source not in engine.library.sources]
     elif source:
         items = [c for c in items if c.source == source]
     if state == "todo":
@@ -362,6 +383,8 @@ def edit_clip(clip_id):
 
 @app.delete("/api/clips/<clip_id>")
 def delete_clip(clip_id):
+    if clip_id not in engine.library.clips:
+        return jsonify({"error": "not found"}), 404
     engine.library.delete(clip_id)
     return jsonify({"ok": True})
 

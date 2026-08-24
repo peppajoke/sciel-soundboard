@@ -54,6 +54,13 @@ class Engine:
         self._dirty = False
         # Running transcript per capture source: (words, last_seen).
         self._stream: dict[str, tuple[list, float]] = {}
+        # Clips already fired from the CURRENT utterance, per source. The words
+        # that matched deliberately stay in the stream (see on_line), so the
+        # per-clip cooldown is the only thing between one phrase and a stutter
+        # -- and that cooldown is 5 s once "disable cooldowns" is ticked, while
+        # the words linger for stream_gap_s (10 s). Reset when the stream
+        # expires, i.e. when the utterance ends.
+        self._fired_this_stream: dict[str, set[str]] = {}
         self._lock = threading.Lock()
 
         # Ring buffer of everything that happened, newest last. The UI polls
@@ -157,6 +164,8 @@ class Engine:
         prev_words, last_seen = self._stream.get(line.source, ([], 0.0))
         if now - last_seen > gap:
             prev_words = []
+            # New utterance: whatever fired off the old one may fire again.
+            self._fired_this_stream.pop(line.source, None)
         stitched = matcher.stitch(prev_words, words, max_words=keep)
         self._stream[line.source] = (stitched, now)
 
@@ -224,6 +233,18 @@ class Engine:
                             note=f"clip cooldown ({hit.score:.2f})")
                 return
 
+        # One fire per clip per utterance. The matched words stay in the stream
+        # on purpose (see below), so the per-clip cooldown lifting is enough to
+        # fire the SAME phrase again: measured 5 fires off one "oh my god" in
+        # 26 s of continuous speech with "disable cooldowns" ticked, because
+        # the 5 s cap is shorter than the 10 s the words survive in the stream.
+        # Those repeats also dodge max_fire_age_s, which only ever sees the age
+        # of the newest chunk, never of the words that actually matched.
+        if hit.clip_id in self._fired_this_stream.get(line.source, ()):
+            self._event("heard", text, source=line.source, fired=None,
+                        note=f"already fired this line ({hit.score:.2f})")
+            return
+
         age = time.time() - getattr(line, "at", now)
         if age > max_age:
             self._event("heard", text, source=line.source, fired=None,
@@ -236,10 +257,14 @@ class Engine:
         # exactly when things were working. Re-firing is already prevented by
         # the per-clip cooldown, whose floor (5 s even when "disabled") is
         # longer than the 3 s scan window that could re-deliver the phrase.
+        # That last part only held before stitching: the STREAM re-delivers the
+        # phrase for far longer than the scan window does, which is what
+        # _fired_this_stream (checked above) covers.
         self._event("heard", text, source=line.source, fired=clip.name,
                     best=round(hit.score, 3), phrase=hit.phrase)
         try:
             self.play(hit.clip_id, why=f"auto:{hit.phrase} ({hit.score:.2f})")
+            self._fired_this_stream.setdefault(line.source, set()).add(hit.clip_id)
             with self._lock:
                 self._auto_fires.append(time.time())
         except Exception as exc:
@@ -371,7 +396,12 @@ class Engine:
     def update_config(self, patch: dict):
         """Apply a config patch. Device/listen changes restart what they touch."""
         outputs_changed = "outputs" in patch and patch["outputs"] != self.cfg["outputs"]
-        gain_changed = "master_gain" in patch
+        # Same rule as outputs: rebuild on a real CHANGE, not on the key merely
+        # being present. A patch carries whatever the panel last read back, so
+        # keying off presence would close and reopen every output stream -- and
+        # cut whatever was playing -- on an unrelated edit.
+        gain_changed = ("master_gain" in patch
+                        and patch["master_gain"] != self.cfg.get("master_gain"))
         # Restart only when the capture list itself changed. The settings
         # panel sends the whole listen block on every edit, so keying off
         # "listen" in patch tore the listener down for a threshold nudge --

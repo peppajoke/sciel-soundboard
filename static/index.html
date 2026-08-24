@@ -962,20 +962,38 @@ function paintStream(s) {
 }
 
 // Still poll events, but only to notice fires and errors.
+// The first poll only sets the baseline. /api/events returns everything newer
+// than `since`, and `since` starts at 0, so a page load replays the entire
+// session: without this a refresh mid-stream announced a clip that fired an
+// hour ago as if it had just fired, and re-raised every error already dealt
+// with.
+let feedSeeded = false;
 async function pollFeed() {
   try {
     const evs = await api('/api/events?since=' + since);
     for (const e of evs) {
       since = Math.max(since, e.at);
+      if (!feedSeeded) continue;
       if (e.kind === 'play') {
-        lastFire = {name: e.text, at: Date.now(), phrase: null};
+        // An auto-fire logs `heard` (which carries the phrase) immediately
+        // before the `play` for the same clip, so the play event must not
+        // blank the phrase that explains why it fired -- that is the whole
+        // point of showing it. A manual press has no phrase to keep.
+        const keep = lastFire && lastFire.name === e.text &&
+                     e.at - lastFire.evAt < 1;
+        lastFire = {name: e.text, at: Date.now(), evAt: e.at,
+                    phrase: keep ? lastFire.phrase : null};
       } else if (e.kind === 'heard' && e.fired) {
-        lastFire = {name: e.fired, at: Date.now(), phrase: e.phrase};
+        lastFire = {name: e.fired, at: Date.now(), evAt: e.at,
+                    phrase: e.phrase};
       } else if (e.kind === 'error') {
-        $('#lastFire').innerHTML =
-          `<span style="color:var(--hot)">${escapeHtml(e.text)}</span>`;
+        // A toast, NOT #lastFire: paintStream rewrites #lastFire on every
+        // 1 s status poll, so an error written there was wiped within a
+        // second and engine failures went unseen.
+        notify(e.text);
       }
     }
+    feedSeeded = true;
   } catch {}
 }
 // Sentinel names for "whatever Windows is defaulting to", stored as device:null.

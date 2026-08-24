@@ -157,13 +157,13 @@ function renderSources() {
                    <span></span><span class="n">${s.clips}</span>`;
     b.querySelector('.slot').appendChild(makeAvatar(s));
     b.children[2].textContent = s.name;
-    b.onclick = () => assign(s.id);
+    b.onclick = () => queueAssign(s.id);
     box.appendChild(b);
   });
   const clear = document.createElement('button');
   clear.className = 'src';
   clear.innerHTML = `<span class="key">0</span><span>— none —</span>`;
-  clear.onclick = () => assign(null);
+  clear.onclick = () => queueAssign(null);
   box.appendChild(clear);
 }
 
@@ -204,6 +204,24 @@ async function assign(sourceId) {
   }
 }
 
+// assign() reads clips[sel] up front but only moves the list on AFTER its PATCH
+// comes back, and every caller fires it without awaiting. Two quick presses --
+// which is the entire point of this screen -- therefore both read the SAME
+// clip: it got assigned twice and the clip behind it was spliced out of the
+// list still unassigned, silently skipped. Chain the calls so each one starts
+// only once the previous has finished moving the list.
+let assignChain = Promise.resolve();
+const queueAssign = id => {
+  // The resync is part of "finished moving the list", so it has to be awaited
+  // too: assign() reads clips[sel] up front, and letting the next link start
+  // while load() is still in flight leaves it splicing an array load() is
+  // about to throw away -- the same wrong-clip bug this chain exists to stop.
+  // load()'s own failure is swallowed separately, so a resync that fails still
+  // cannot poison the chain and kill every later keypress.
+  assignChain = assignChain.then(() => assign(id))
+                           .catch(() => load().catch(() => {}));
+};
+
 $('#filterBtn').onclick = () => {
   unassignedOnly = !unassignedOnly;
   $('#filterBtn').classList.toggle('on', unassignedOnly);
@@ -216,9 +234,9 @@ document.addEventListener('keydown', e => {
   if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
   if (e.key >= '1' && e.key <= '9') {
     const s = sources[+e.key - 1];
-    if (s) { e.preventDefault(); assign(s.id); }
+    if (s) { e.preventDefault(); queueAssign(s.id); }
   } else if (e.key === '0') {
-    e.preventDefault(); assign(null);
+    e.preventDefault(); queueAssign(null);
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
     if (sel < clips.length - 1) { sel++; renderClips(); }

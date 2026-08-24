@@ -22,6 +22,7 @@ import json
 import re
 import shutil
 import subprocess
+import threading
 import time
 import uuid
 from dataclasses import dataclass, field, asdict
@@ -113,6 +114,12 @@ class Library:
     def __init__(self) -> None:
         self.clips: dict[str, Clip] = {}
         self.sources: dict[str, Source] = {}
+        # Saves come from several threads at once: the engine's play-count
+        # flush timer, the NAS watcher, and any Flask handler (the server runs
+        # threaded). They all wrote the SAME .tmp path, so one thread could
+        # rename a file another was still writing -- which is precisely the
+        # half-written index that write-then-rename exists to prevent.
+        self._save_lock = threading.Lock()
         self.load()
 
     # ---------- persistence ----------
@@ -152,11 +159,18 @@ class Library:
     def save(self) -> None:
         # Write-then-rename: this box hard power-offs, and a half-written
         # index would lose the whole library rather than one clip.
-        tmp = INDEX.with_suffix(".json.tmp")
-        payload = {"clips": [asdict(c) for c in self.clips.values()],
-                   "sources": [asdict(s) for s in self.sources.values()]}
-        tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        tmp.replace(INDEX)
+        with self._save_lock:
+            # Snapshot both dicts first. asdict() runs Python per clip, so
+            # iterating the live dicts here raises "dictionary changed size
+            # during iteration" the moment an upload or a NAS import lands
+            # mid-save -- and that save is then lost.
+            clips = list(self.clips.values())
+            sources = list(self.sources.values())
+            tmp = INDEX.with_suffix(".json.tmp")
+            payload = {"clips": [asdict(c) for c in clips],
+                       "sources": [asdict(s) for s in sources]}
+            tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            tmp.replace(INDEX)
 
     # ---------- import ----------
 
@@ -314,6 +328,12 @@ class Library:
             tags=list(src.tags),
             threshold=src.threshold,
             random_ok=src.random_ok,
+            # Two cuts of one upload are from the same place and want the same
+            # level. Dropping these left the copy unassigned, so it vanished
+            # out of whichever source tab you were duplicating from, and at
+            # full volume, so a clip deliberately turned down came back loud.
+            source=src.source,
+            gain=src.gain,
             # A duplicate exists to become a DIFFERENT cut, so it starts
             # unfinished no matter what the source was marked.
             finished=False,

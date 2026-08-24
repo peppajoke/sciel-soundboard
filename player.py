@@ -45,6 +45,19 @@ class _Voice:
         self.gain = gain
         self.releasing = False      # cut short: ramp down and finish
         self.release_pos = 0
+        # The ramps have to FIT. A clip shorter than fade-in + fade-out (10 ms)
+        # gets both applied to the same samples, and two ramps multiplied is
+        # not a declick: a 4 ms trim came out at 0.18 of level and a 2 ms one
+        # at 0.04, i.e. silent. Shrink them in proportion so they still meet
+        # at unity instead of eating the clip.
+        n = len(data)
+        span = FADE_IN_FRAMES + FADE_OUT_FRAMES
+        if span and n < span:
+            self.fade_in = int(n * FADE_IN_FRAMES / span)
+            self.fade_out = n - self.fade_in
+        else:
+            self.fade_in = FADE_IN_FRAMES
+            self.fade_out = FADE_OUT_FRAMES
 
     def read(self, frames: int) -> np.ndarray:
         chunk = self.data[self.pos : self.pos + frames]
@@ -60,11 +73,11 @@ class _Voice:
 
         # Ramp in from silence, and out into it, so a trim that starts or ends
         # mid-waveform does not present a step to the DAC.
-        if start < FADE_IN_FRAMES and FADE_IN_FRAMES:
-            env = np.clip(idx / FADE_IN_FRAMES, 0.0, 1.0)
+        if start < self.fade_in and self.fade_in:
+            env = np.clip(idx / self.fade_in, 0.0, 1.0)
             out = out * env[:, None]
-        if start + frames > n - FADE_OUT_FRAMES and FADE_OUT_FRAMES:
-            env = np.clip((n - idx) / FADE_OUT_FRAMES, 0.0, 1.0)
+        if start + frames > n - self.fade_out and self.fade_out:
+            env = np.clip((n - idx) / self.fade_out, 0.0, 1.0)
             out = out * env[:, None]
 
         if self.releasing:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -159,7 +160,14 @@ def load() -> dict:
     return dict(DEFAULTS)
 
 
+# The board is driven from a phone as well as the laptop, so two PATCHes can
+# land at once on a threaded server. Both writers shared one .tmp path, which
+# could rename a half-written file over config.json.
+_SAVE_LOCK = threading.Lock()
+
+
 def save(cfg: dict) -> None:
-    tmp = CONFIG_PATH.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
-    tmp.replace(CONFIG_PATH)
+    with _SAVE_LOCK:
+        tmp = CONFIG_PATH.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        tmp.replace(CONFIG_PATH)

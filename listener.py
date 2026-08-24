@@ -200,12 +200,20 @@ class _Capture(threading.Thread):
                         # Loud, repeated, and surfaced in /api/status. A
                         # silently deaf listener is the failure mode that
                         # wastes a whole stream.
+                        #
+                        # The repeat is rate-limited with its OWN clock. It
+                        # used to re-stamp last_signal to get the next warning,
+                        # which destroyed the one number that says how long we
+                        # have been deaf: /api/status reported silent_for as a
+                        # sawtooth that never passed SILENT_WARN_S, so a mic
+                        # dead for ten minutes read as "silent for 11s".
                         self.healthy = False
-                        log.warning(
-                            "[%s] NO AUDIO for %.0fs on %r -- wrong device, "
-                            "muted input, or nothing playing.",
-                            self.source, now - self.last_signal, mic.name)
-                        self.last_signal = now
+                        if now - self._last_quiet_note > SILENT_WARN_S:
+                            self._last_quiet_note = now
+                            log.warning(
+                                "[%s] NO AUDIO for %.0fs on %r -- wrong device, "
+                                "muted input, or nothing playing.",
+                                self.source, now - self.last_signal, mic.name)
 
                     if rms <= SILENCE_RMS:
                         continue
@@ -227,7 +235,16 @@ class _Capture(threading.Thread):
                     self.chunks += 1
                     if text:
                         self.transcribed += 1
-                        self.emit(Line(text=text, source=self.source, at=captured_at))
+                        try:
+                            self.emit(Line(text=text, source=self.source,
+                                           at=captured_at))
+                        except Exception as exc:
+                            # emit() runs the whole match-and-play pipeline.
+                            # Anything it raises escapes the while loop into
+                            # the outer handler and the thread NEVER records
+                            # again -- one bad line and the app is deaf for
+                            # the rest of the stream. Log it and keep capturing.
+                            log.exception("[%s] emit failed: %s", self.source, exc)
                     # Audio with no words is NOT emitted. It used to send a
                     # "(sound, no speech - peak N dB)" note, which then got
                     # stitched into the word stream and matched against --
@@ -258,6 +275,8 @@ class Listener:
         self.model = None
         self.captures = []
         self.model_info = ""
+        self._starting = False
+        self._cancel = False
 
     def _load_model(self):
         from faster_whisper import WhisperModel
@@ -277,34 +296,56 @@ class Listener:
         return model
 
     def start(self):
-        if self.captures:
+        if self.captures or self._starting:
             return
-        self.model = self._load_model()
-        log.info("whisper: %s", self.model_info)
+        # `running` has to be true from HERE, not from the moment the first
+        # capture thread exists. Loading whisper takes ~10s, `captures` is
+        # empty for all of it, and callers check `running` before deciding to
+        # start a listener at all -- so for that whole window the listener read
+        # as OFF and a second one got built on top of it. Three models and six
+        # capture threads ended up live at once, transcribing every hop three
+        # times and emitting every line three times, with only the last pair
+        # visible in /api/status and only the last pair stoppable.
+        self._starting = True
+        self._cancel = False
+        try:
+            model = self._load_model()
+            if self._cancel:
+                # stop() landed while the model was loading; do not attach
+                # captures for a config that has already been replaced.
+                return
+            self.model = model
+            log.info("whisper: %s", self.model_info)
 
-        chunk = float(self.cfg.get("chunk_s", 3.0))
-        for entry in self.cfg.get("inputs") or []:
-            device = entry.get("device")
-            loopback = bool(entry.get("loopback"))
-            # Label is what shows in the transcript feed, so make it the thing
-            # you would recognise: the device name, not "input 3".
-            label = entry.get("label") or _label(device, loopback)
-            cap = _Capture(label, device, loopback, self.model, chunk,
-                           self.emit, self.gate,
-                           hop_s=float(self.cfg.get("hop_s", 0.75)),
-                           prompt_fn=self.prompt_fn,
-                           beam_size=int(self.cfg.get("beam_size", 5)))
-            cap.start()
-            self.captures.append(cap)
+            chunk = float(self.cfg.get("chunk_s", 3.0))
+            for entry in self.cfg.get("inputs") or []:
+                device = entry.get("device")
+                loopback = bool(entry.get("loopback"))
+                # Label is what shows in the transcript feed, so make it the
+                # thing you would recognise: the device name, not "input 3".
+                label = entry.get("label") or _label(device, loopback)
+                cap = _Capture(label, device, loopback, self.model, chunk,
+                               self.emit, self.gate,
+                               hop_s=float(self.cfg.get("hop_s", 0.75)),
+                               prompt_fn=self.prompt_fn,
+                               beam_size=int(self.cfg.get("beam_size", 5)))
+                cap.start()
+                self.captures.append(cap)
+        finally:
+            self._starting = False
 
     def stop(self):
+        # Cancels an in-flight start as well: `running` is true during the
+        # model load now, so a restart can land inside that window.
+        self._cancel = True
+        self._starting = False
         for cap in self.captures:
             cap.stop_flag.set()
         self.captures = []
 
     @property
     def running(self):
-        return any(c.is_alive() for c in self.captures)
+        return self._starting or any(c.is_alive() for c in self.captures)
 
     def status(self):
         return {
