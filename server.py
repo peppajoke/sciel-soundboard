@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -139,7 +140,8 @@ def map_page():
 @app.get("/api/sources")
 def list_sources():
     counts = engine.library.source_counts()
-    items = [{"id": s.id, "name": s.name, "clips": counts.get(s.id, 0)}
+    items = [{"id": s.id, "name": s.name, "clips": counts.get(s.id, 0),
+              "image": s.image}
              for s in sorted(engine.library.sources.values(),
                              key=lambda s: s.name.lower())]
     return jsonify({"sources": items, "unassigned": counts.get("", 0)})
@@ -162,6 +164,60 @@ def rename_source(source_id):
     body = request.get_json(force=True) or {}
     src = engine.library.rename_source(source_id, str(body.get("name", "")))
     return jsonify({"id": src.id, "name": src.name})
+
+
+SOURCE_IMAGES = ROOT / "static" / "source_images"
+
+
+@app.get("/source_images/<path:name>")
+def source_image(name):
+    return send_from_directory(SOURCE_IMAGES, name)
+
+
+@app.post("/api/sources/<source_id>/image")
+def set_source_image(source_id):
+    """Accept an image for a source and normalise it to a 96px square PNG.
+
+    Resizing on upload rather than in CSS keeps the repo small -- a handful of
+    phone-camera JPEGs would outweigh the entire clip library otherwise -- and
+    guarantees every button is the same size regardless of what was dropped in.
+    ffmpeg does the work; it is already a hard dependency for clip import.
+    """
+    if source_id not in engine.library.sources:
+        return jsonify({"error": "not found"}), 404
+    f = request.files.get("image")
+    if not f or not f.filename:
+        return jsonify({"error": "no image supplied"}), 400
+
+    SOURCE_IMAGES.mkdir(parents=True, exist_ok=True)
+    tmp = LOGDIR / f"_img_{int(time.time()*1000)}{Path(f.filename).suffix.lower()}"
+    out_name = f"{source_id}.png"
+    try:
+        f.save(tmp)
+        subprocess.run(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(tmp),
+             # Cover-crop to a square so faces are not squashed.
+             "-vf", "scale=96:96:force_original_aspect_ratio=increase,crop=96:96",
+             "-frames:v", "1", str(SOURCE_IMAGES / out_name)],
+            check=True)
+    except subprocess.CalledProcessError:
+        return jsonify({"error": "could not read that image"}), 400
+    finally:
+        tmp.unlink(missing_ok=True)
+
+    engine.library.set_source_image(source_id, out_name)
+    return jsonify({"id": source_id, "image": out_name})
+
+
+@app.delete("/api/sources/<source_id>/image")
+def clear_source_image(source_id):
+    if source_id not in engine.library.sources:
+        return jsonify({"error": "not found"}), 404
+    src = engine.library.sources[source_id]
+    if src.image:
+        (SOURCE_IMAGES / src.image).unlink(missing_ok=True)
+    engine.library.set_source_image(source_id, None)
+    return jsonify({"ok": True})
 
 
 @app.delete("/api/sources/<source_id>")

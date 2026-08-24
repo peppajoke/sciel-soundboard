@@ -59,6 +59,10 @@ class Source:
     id: str
     name: str
     added_at: float = 0.0
+    # Filename inside static/source_images/, or None for the generated
+    # initial avatar. Stored as a name rather than a path so the folder can
+    # move with the repo.
+    image: str | None = None
 
 
 @dataclass
@@ -120,7 +124,11 @@ class Library:
         if INDEX.exists():
             raw = json.loads(INDEX.read_text(encoding="utf-8-sig"))
             if "sources" in raw:
-                self.sources = {s["id"]: Source(**s) for s in raw["sources"]}
+                known_src = set(Source.__dataclass_fields__)
+                self.sources = {
+                    s["id"]: Source(**{k: v for k, v in s.items() if k in known_src})
+                    for s in raw["sources"]
+                }
             else:
                 self.sources = {}
                 for name in SEED_SOURCES:
@@ -238,6 +246,12 @@ class Library:
     def rename_source(self, source_id: str, name: str) -> Source:
         src = self.sources[source_id]
         src.name = name.strip() or src.name
+        self.save()
+        return src
+
+    def set_source_image(self, source_id: str, filename: str | None) -> Source:
+        src = self.sources[source_id]
+        src.image = filename
         self.save()
         return src
 

@@ -105,6 +105,16 @@ Williams, Tim Robinson, Trump, DJ Khaled and Arrested Development.
 Deleting a source never deletes clips; they just become unassigned. The board
 has a source filter next to the tabs.
 
+### Source pictures
+
+Each source can carry a small picture, shown on the filter buttons and on the
+map screen. On **/sources**, click the circle next to a source (or drop an
+image onto it) — the image is cropped to a 96px square PNG on upload, so the
+repo stays small and every button is the same size.
+
+Without a picture a source shows a coloured initial, with the colour derived
+from the name so it stays the same everywhere.
+
 ### Mapping clips to sources fast
 
 **/map** (link in the header) is a two-pane screen built for doing the whole

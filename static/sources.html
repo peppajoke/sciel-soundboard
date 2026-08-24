@@ -32,6 +32,11 @@
          background:var(--panel); border:1px solid var(--line);
          border-radius:10px; margin-bottom:8px; }
   .src .nm { flex:1; font-weight:600; }
+  .avatar { width:34px; height:34px; border-radius:50%; object-fit:cover;
+            flex:none; display:inline-flex; align-items:center;
+            justify-content:center; font-size:14px; font-weight:700;
+            color:#0b0e13; cursor:pointer; }
+  .avatar.drop { outline:2px dashed var(--accent); }
   .src .cnt { color:var(--dim); font-size:12px; }
   .src input { flex:1; }
   .note { color:var(--dim); font-size:12px; margin-top:16px; }
@@ -53,6 +58,9 @@
   <div id="list"></div>
 
   <p class="note" id="unassigned"></p>
+  <p class="note">Click a circle (or drop an image on it) to give a source a
+    picture. It is cropped to a 96px square and shown on the filter buttons.
+    Without one you get a coloured initial.</p>
   <p class="note">Deleting a source never deletes clips — they just become
     unassigned, and you can put them somewhere else.</p>
 </main>
@@ -75,11 +83,26 @@ async function load() {
   for (const s of d.sources) {
     const el = document.createElement('div');
     el.className = 'src';
-    el.innerHTML = `<span class="nm"></span>
+    el.innerHTML = `<span class="avatarSlot"></span>
+      <span class="nm"></span>
       <span class="cnt">${s.clips} clip${s.clips === 1 ? '' : 's'}</span>
       <button class="ren">Rename</button>
+      ${s.image ? '<button class="rmimg">Clear pic</button>' : ''}
       <button class="del danger">Delete</button>`;
     el.querySelector('.nm').textContent = s.name;
+
+    // Click or drop an image onto the avatar to set it.
+    const slot = el.querySelector('.avatarSlot');
+    const av = makeAvatar(s);
+    av.title = 'Click or drop an image to set a picture';
+    slot.appendChild(av);
+    av.onclick = () => pickImage(s);
+    av.ondragover = e => { e.preventDefault(); av.classList.add('drop'); };
+    av.ondragleave = () => av.classList.remove('drop');
+    av.ondrop = e => {
+      e.preventDefault(); av.classList.remove('drop');
+      if (e.dataTransfer.files[0]) uploadImage(s.id, e.dataTransfer.files[0]);
+    };
 
     el.querySelector('.ren').onclick = () => {
       const input = document.createElement('input');
@@ -99,6 +122,12 @@ async function load() {
                                if (e.key === 'Escape') load(); };
     };
 
+    const rm = el.querySelector('.rmimg');
+    if (rm) rm.onclick = async () => {
+      await api(`/api/sources/${s.id}/image`, {method:'DELETE'});
+      load();
+    };
+
     el.querySelector('.del').onclick = async () => {
       const warn = s.clips
         ? `Delete "${s.name}"? ${s.clips} clip(s) will become unassigned. The clips are kept.`
@@ -111,6 +140,39 @@ async function load() {
   }
   $('#unassigned').textContent = d.unassigned
     ? `${d.unassigned} clip(s) have no source yet.` : '';
+}
+
+function makeAvatar(s) {
+  if (s.image) {
+    const img = document.createElement('img');
+    img.className = 'avatar';
+    img.src = `/source_images/${s.image}?t=${Date.now()}`;  // bust the cache
+    return img;
+  }
+  const span = document.createElement('span');
+  span.className = 'avatar';
+  let h = 0;
+  for (const ch of s.name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  span.style.background = `hsl(${h} 55% 62%)`;
+  span.textContent = s.name.trim()[0].toUpperCase();
+  return span;
+}
+
+function pickImage(s) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => { if (input.files[0]) uploadImage(s.id, input.files[0]); };
+  input.click();
+}
+
+async function uploadImage(id, file) {
+  const fd = new FormData();
+  fd.append('image', file);
+  try {
+    await api(`/api/sources/${id}/image`, {method:'POST', body: fd});
+    load();
+  } catch (e) { alert('Could not set picture: ' + e.message); }
 }
 
 async function add() {

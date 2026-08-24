@@ -33,7 +33,13 @@
 
   #tabs { display:flex; gap:8px; margin-bottom:10px; }
   #srcTabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
-  #srcTabs .tab { padding:5px 10px; font-size:13px; border-radius:99px; }
+  #srcTabs .tab { padding:4px 10px 4px 4px; font-size:13px; border-radius:99px;
+                  display:inline-flex; align-items:center; gap:7px; }
+  #srcTabs .tab.plain { padding-left:10px; }
+  .avatar { width:22px; height:22px; border-radius:50%; object-fit:cover;
+            flex:none; display:inline-flex; align-items:center;
+            justify-content:center; font-size:10px; font-weight:700;
+            color:#0b0e13; }
   .tab { color:var(--dim); }
   .tab.sel { color:var(--text); border-color:var(--accent); background:var(--panel); }
   .tab .cnt { font-size:11px; opacity:.75; margin-left:4px; }
@@ -269,7 +275,7 @@ async function loadSources() {
   // A source with no clips still gets a tab: it is how you see that a source
   // exists at all without opening the sources page.
   const tabsDef = [{id: '', label: 'All sources', n: null}]
-    .concat(sources.map(s => ({id: s.id, label: s.name, n: s.clips})))
+    .concat(sources.map(s => ({id: s.id, label: s.name, n: s.clips, image: s.image})))
     .concat(d.unassigned ? [{id: 'none', label: 'No source', n: d.unassigned}] : []);
 
   const box = $('#srcTabs');
@@ -277,7 +283,9 @@ async function loadSources() {
   for (const t of tabsDef) {
     const b = document.createElement('button');
     b.className = 'tab' + (t.id === srcFilter ? ' sel' : '');
-    b.textContent = t.label;
+    const av = avatarFor(t);
+    if (av) b.appendChild(av); else b.classList.add('plain');
+    b.appendChild(document.createTextNode(t.label));
     if (t.n !== null) {
       const c = document.createElement('span');
       c.className = 'cnt'; c.textContent = t.n;
@@ -315,6 +323,28 @@ async function loadClips() {
 for (const b of document.querySelectorAll('#tabs .tab')) {
   b.onclick = () => { tab = b.dataset.state; localStorage.setItem('sb_tab', tab); loadClips(); };
 }
+// A source shows its picture if it has one, otherwise a coloured initial --
+// so the filter row reads visually even before any images are added.
+function avatarFor(t) {
+  if (!t.id || t.id === 'none') return null;
+  if (t.image) {
+    const img = document.createElement('img');
+    img.className = 'avatar';
+    img.src = `/source_images/${t.image}`;
+    img.alt = '';
+    return img;
+  }
+  const span = document.createElement('span');
+  span.className = 'avatar';
+  // Deterministic hue from the name: the same source keeps the same colour
+  // across reloads and across the map screen.
+  let h = 0;
+  for (const ch of t.label || '') h = (h * 31 + ch.charCodeAt(0)) % 360;
+  span.style.background = `hsl(${h} 55% 62%)`;
+  span.textContent = (t.label || '?').trim()[0].toUpperCase();
+  return span;
+}
+
 const srcName = id => {
   const s = sources.find(x => x.id === id);
   return s ? escapeHtml(s.name) + ' · ' : '';
