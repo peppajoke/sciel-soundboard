@@ -414,6 +414,20 @@ def set_random():
     return jsonify(engine.status())
 
 
+@app.post("/api/reload")
+def reload_library():
+    """Re-read library.json from disk.
+
+    Needed because fetch.py (or any other process) writes the index directly,
+    and this process would otherwise overwrite it from stale memory.
+    """
+    engine.library.load()
+    engine.warm_cache()
+    engine._event("info", f"library reloaded: {len(engine.library.clips)} clips")
+    return jsonify({"clips": len(engine.library.clips),
+                    "sources": len(engine.library.sources)})
+
+
 @app.get("/api/status")
 def status():
     return jsonify(engine.status())

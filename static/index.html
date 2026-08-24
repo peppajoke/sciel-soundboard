@@ -58,6 +58,26 @@
   .pad .edit { position:absolute; top:6px; right:6px; opacity:0; padding:2px 6px;
                font-size:11px; }
   .pad:hover .edit { opacity:1; }
+  /* Cooling pads stay pressable -- a manual press ignores cooldowns -- so
+     they are dimmed with a countdown rather than disabled. */
+  .pad.cool { border-color:var(--warn); }
+  .pad.cool .nm, .pad.cool .meta { opacity:.55; }
+  .pad .cd { position:absolute; bottom:6px; right:8px; font-size:11px;
+             font-weight:700; color:var(--warn);
+             font-family:ui-monospace,Consolas,monospace; }
+  /* Fixed height with internal scroll: this list grows and shrinks constantly,
+     and it must not move anything else on the page. */
+  #coolList { height:190px; overflow-y:auto; font-size:12px; }
+  .cool-row { display:flex; align-items:center; gap:8px; padding:4px 0;
+              border-bottom:1px solid var(--line); }
+  .cool-row .nm { flex:1; overflow:hidden; text-overflow:ellipsis;
+                  white-space:nowrap; }
+  .cool-row .left { color:var(--warn); font-weight:700;
+                    font-family:ui-monospace,Consolas,monospace; }
+  .cool-row .bar { width:52px; height:4px; border-radius:2px;
+                   background:var(--panel2); overflow:hidden; flex:none; }
+  .cool-row .bar span { display:block; height:100%; background:var(--warn); }
+  #coolList .quiet { color:var(--dim); font-style:italic; padding-top:6px; }
 
   aside > section { background:var(--panel); border:1px solid var(--line);
                     border-radius:10px; padding:12px; margin-bottom:14px; }
@@ -92,6 +112,7 @@
             display:flex; align-items:center; }
   #stream .quiet { color:var(--dim); font-style:italic; }
   #stream .live { color:var(--text); }
+  #stream .age { color:var(--dim); font-size:11px; white-space:nowrap; }
   #stream b { color:var(--good); }
   #lastFire { height:32px; margin-top:8px; font-size:12px; color:var(--dim);
               display:flex; align-items:center; gap:6px; }
@@ -217,6 +238,12 @@
       <div id="cfgStatus" style="font-size:11px;color:var(--dim);margin-top:10px;
            min-height:15px">Settings save as you change them.</div>
     </section>
+
+    <section>
+      <h2>On cooldown <span id="coolCount" class="pill"></span>
+        <span id="globalCool" class="pill"></span></h2>
+      <div id="coolList"></div>
+    </section>
   </aside>
 </main>
 
@@ -236,6 +263,8 @@
 
   <label>Trigger phrases — one per line. Auto mode fires when speech is close to any of these.</label>
   <textarea id="edTriggers" rows="4" placeholder="you shall not pass&#10;shall not pass"></textarea>
+  <div id="edCooldown" style="font-size:12px;color:var(--warn);min-height:17px"></div>
+
   <label>Volume <span id="gainVal" class="pill"></span></label>
   <div class="row">
     <input id="edGain" type="range" min="-24" max="12" step="0.5" style="flex:1">
@@ -322,6 +351,8 @@ async function loadClips() {
                       (src ? `&source=${encodeURIComponent(src)}` : '') +
                       `&q=` + encodeURIComponent($('#search').value));
   clips = r.clips;
+  for (const c of clips) clipNames[c.id] = c.name;
+  localStorage.setItem('sb_names', JSON.stringify(clipNames));
   // Scoped to #tabs: the source pills share the .tab class, and an unscoped
   // query hit those too -- the first one without a count span threw, which
   // killed render() and left the board looking empty.
@@ -610,6 +641,13 @@ function openEditor(c) {
   $('#edSource').value = c.source || '';
   setGainDb(gainToDb(c.gain ?? 1));
   stopPreview();
+  fetch('/api/status').then(r => r.json()).then(st => {
+    const left = (st.cooling || {})[c.id];
+    $('#edCooldown').textContent = left
+      ? `Resting: auto mode will not fire this for another ${Math.ceil(left)}s. ` +
+        `Pressing it yourself always works.`
+      : 'Not on cooldown.';
+  }).catch(() => {});
   $('#editor').showModal();
   loadWave(c);          // after showModal, so the canvas has a real width
 }
@@ -722,6 +760,7 @@ function paintAuto(s) {
   });
 
   paintStream(s);
+  paintCooldowns(s);
 
   const l = s.listener || {};
   const caps = l.captures || [];
@@ -742,18 +781,95 @@ function paintAuto(s) {
 // of every scan window -- the windows overlap, so the log was mostly the same
 // words printed again and again.
 let lastFire = null;
+// id -> name, so the cooldown list can show titles for clips that are not in
+// the current tab or filter.
+let clipNames = JSON.parse(localStorage.getItem('sb_names') || '{}');
+
+// Remaining cooldowns, painted onto the pads themselves so it is obvious why
+// auto mode is ignoring a clip. Updated from the 1 s status poll, and the
+// badge is absolutely positioned so a countdown appearing never reflows.
+function paintCooldowns(s) {
+  const cooling = s.cooling || {};
+  const ids = Object.keys(cooling);
+
+  for (const pad of document.querySelectorAll('.pad')) {
+    const left = cooling[pad.dataset.id];
+    let badge = pad.querySelector('.cd');
+    if (left) {
+      pad.classList.add('cool');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'cd';
+        pad.appendChild(badge);
+      }
+      badge.textContent = left >= 60
+        ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`
+        : `${Math.ceil(left)}s`;
+    } else {
+      pad.classList.remove('cool');
+      if (badge) badge.remove();
+    }
+  }
+
+  // Full list, longest wait first, below the settings panel.
+  const total = Math.max(1, s.cooldown_s || 180);
+  const rows = ids.map(id => ({id, left: cooling[id],
+                               name: (clipNames[id] || id)}))
+                  .sort((a, b) => b.left - a.left);
+  $('#coolCount').textContent = rows.length ? String(rows.length) : '0';
+
+  // The global cooldown blocks EVERY clip briefly after any fire, so it needs
+  // its own indicator -- otherwise nothing firing looks like a broken matcher.
+  const g = s.global_cooldown_left || 0;
+  const gp = $('#globalCool');
+  if (g > 0) {
+    gp.textContent = `all clips ${g.toFixed(1)}s`;
+    gp.className = 'pill bad';
+  } else {
+    gp.textContent = '';
+    gp.className = 'pill';
+    gp.style.border = 'none';
+    gp.style.background = 'transparent';
+  }
+  if (g > 0) { gp.style.border = ''; gp.style.background = ''; }
+  const list = $('#coolList');
+  if (!rows.length) {
+    list.innerHTML = '<div class="quiet">Nothing resting.' +
+      (s.cooldowns_off ? ' Cooldowns capped at 5s.' : '') + '</div>';
+    return;
+  }
+  list.innerHTML = rows.map(r => {
+    const label = r.left >= 60
+      ? `${Math.floor(r.left / 60)}:${String(Math.floor(r.left % 60)).padStart(2, '0')}`
+      : `${Math.ceil(r.left)}s`;
+    const pct = Math.max(0, Math.min(100, (r.left / total) * 100));
+    return `<div class="cool-row"><span class="nm">${escapeHtml(r.name)}</span>` +
+           `<span class="bar"><span style="width:${pct}%"></span></span>` +
+           `<span class="left">${label}</span></div>`;
+  }).join('');
+}
 
 function paintStream(s) {
   const streams = (s.streams || []).filter(x => x.text);
   const box = $('#stream');
+  const l = s.listener || {};
   if (!streams.length) {
-    box.innerHTML = '<span class="quiet">' +
-      (s.listener && s.listener.running ? 'listening…' : 'listener off') + '</span>';
+    // Distinguish the three quiet states, because they look identical
+    // otherwise and "stuck" was impossible to diagnose.
+    let why = 'listener off';
+    if (l.running) {
+      const caps = l.captures || [];
+      const deaf = caps.length && caps.every(c => !c.healthy);
+      why = deaf ? 'no audio reaching the listener' : 'listening — no speech yet';
+    }
+    box.innerHTML = `<span class="quiet">${why}</span>`;
   } else {
-    // Newest source first when several are being scanned.
     streams.sort((a, b) => a.age - b.age);
+    // Age is shown so a frozen display is obvious: if the seconds keep
+    // climbing while you talk, the listener has stalled rather than the UI.
     box.innerHTML = streams.map(x =>
-      `<span class="live">${escapeHtml(x.text)}</span>`).join('<br>');
+      `<span class="live">${escapeHtml(x.text)}</span>` +
+      `<span class="age"> ${x.age.toFixed(1)}s</span>`).join('<br>');
   }
 
   const lf = $('#lastFire');

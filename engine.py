@@ -216,9 +216,11 @@ class Engine:
                 return
 
         clip = self.library.clips[hit.clip_id]
-        # Consume the sequence: leaving it in place would re-match on the next
-        # window and rely on the cooldown to suppress a clip that already fired.
-        self._stream[line.source] = ([], now)
+        # The sequence is deliberately NOT cleared here. Clearing it wiped the
+        # live transcript every time a clip fired, so the display looked dead
+        # exactly when things were working. Re-firing is already prevented by
+        # the per-clip cooldown, whose floor (5 s even when "disabled") is
+        # longer than the 3 s scan window that could re-deliver the phrase.
         self._event("heard", text, source=line.source, fired=clip.name,
                     best=round(hit.score, 3), phrase=hit.phrase)
         try:
@@ -381,6 +383,48 @@ class Engine:
 
         return self.cfg
 
+    def live_streams(self) -> list:
+        """The running transcripts, expiring any past the silence gap.
+
+        This is the SAME state matching reads, so what the UI shows is
+        exactly what a trigger would be compared against.
+        """
+        gap = float(self.cfg["listen"].get("stream_gap_s", 10.0))
+        now = time.time()
+        out = []
+        for src, (words, seen) in list(self._stream.items()):
+            age = now - seen
+            if age > gap:
+                # Expire it for real, so the next line starts a fresh
+                # utterance and the display goes quiet.
+                self._stream[src] = ([], seen)
+                continue
+            if words:
+                out.append({"source": src, "text": " ".join(words),
+                            "age": round(age, 1), "words": len(words)})
+        return out
+
+    def _cooling(self) -> dict:
+        """Seconds of cooldown left per clip, for clips currently resting.
+
+        Only auto-fire is blocked by a cooldown -- a manual press always
+        works -- so this is shown as a countdown rather than a locked pad.
+        """
+        cooldown = self._cooldown("cooldown_s", 180.0)
+        now = time.time()
+        with self._lock:
+            fired = dict(self._clip_last_fired)
+        out = {}
+        for clip_id, last in fired.items():
+            left = cooldown - (now - last)
+            if left > 0:
+                out[clip_id] = round(left, 1)
+        return out
+
+    def _global_cooldown_left(self) -> float:
+        left = self._cooldown("global_cooldown_s", 2.0) - (time.time() - self._last_fire_at)
+        return round(max(0.0, left), 1)
+
     def _budget_state(self):
         listen = self.cfg["listen"]
         window = float(listen.get("budget_window_s", 300))
@@ -400,12 +444,14 @@ class Engine:
             "auto_clips": len(self.library.auto_clips()),
             "budget": self._budget_state(),
             "cooldowns_off": bool(self.cfg["listen"].get("cooldowns_off")),
-            # The live word stream, for the transcript display.
-            "streams": [
-                {"source": src, "text": " ".join(words),
-                 "age": round(time.time() - seen, 1)}
-                for src, (words, seen) in self._stream.items()
-            ],
+            "cooling": self._cooling(),
+            "cooldown_s": self._cooldown("cooldown_s", 180.0),
+            "global_cooldown_left": self._global_cooldown_left(),
+            # The live word stream. Expired entries are dropped HERE, not
+            # merely when the next line arrives -- otherwise the display kept
+            # showing words long after they had aged out of matching, which
+            # looks like the listener has stalled.
+            "streams": self.live_streams(),
             "random": {
                 "enabled": bool(self.cfg.get("random", {}).get("enabled")),
                 "eligible": len(self.library.random_clips()),

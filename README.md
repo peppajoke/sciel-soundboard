@@ -95,6 +95,21 @@ Saving is gated on the panel having finished loading. Without that gate an
 early change event serialises a half-built DOM and writes empty device lists
 over a good config.
 
+## Fetching clips from a URL
+
+```
+.venv\Scripts\python.exe fetch.py --url URL --start 12.5 --end 15.2     --name "Bears. Beets." --source "The Office" --trigger "bears beets"
+```
+
+`--batch clips.json` takes a JSON list of the same fields. Only the requested
+span is downloaded, so a three-second bite does not pull a whole video, and a
+clip with a span arrives marked finished.
+
+**It imports through the running server when one is up.** Both processes owning
+`library.json` is a race the server wins: it holds the library in memory and
+flushes on its own schedule, so a clip written directly underneath it simply
+disappears. Direct writes are the offline fallback only.
+
 ## Sources
 
 Every clip can be tagged with what it was clipped from. Manage the list at
