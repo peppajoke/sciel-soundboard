@@ -84,6 +84,10 @@ class Clip:
     # an arbitrary clip unprompted is only funny for the handful you picked.
     random_ok: bool = False
     source: str | None = None       # id of the Source this was clipped from
+    # Milliseconds to wait between the fire decision and the sound. None
+    # means "use the global play_delay_ms"; 0 is a real override meaning
+    # "this clip plays instantly".
+    delay_ms: float | None = None
     # Per-clip level, linear multiplier applied at playback. Import already
     # loudness-normalises everything, so this is for taste -- a clip that
     # should sit under the game, or one that needs to punch through.
@@ -335,6 +339,7 @@ class Library:
             tags=list(src.tags),
             threshold=src.threshold,
             random_ok=src.random_ok,
+            delay_ms=src.delay_ms,
             # Two cuts of one upload are from the same place and want the same
             # level. Dropping these left the copy unassigned, so it vanished
             # out of whichever source tab you were duplicating from, and at

@@ -114,7 +114,7 @@ def _clip_json(clip):
         "start": clip.start, "end": clip.end, "random_ok": clip.random_ok,
         "play_duration": round(clip.play_duration, 3),
         "finished": clip.finished, "source": clip.source, "plays": clip.plays,
-        "gain": clip.gain,
+        "gain": clip.gain, "delay_ms": clip.delay_ms,
     }
 
 
@@ -362,6 +362,17 @@ def edit_clip(clip_id):
 
     if "finished" in body:
         fields["finished"] = bool(body["finished"])
+
+    if "delay_ms" in body:
+        value = body["delay_ms"]
+        if value in (None, ""):
+            fields["delay_ms"] = None          # back to the global default
+        else:
+            try:
+                # Cap at 5s: a larger value is a mistake, not comedy timing.
+                fields["delay_ms"] = round(max(0.0, min(5000.0, float(value))), 1)
+            except (TypeError, ValueError):
+                return jsonify({"error": "delay_ms must be a number"}), 400
 
     if "gain" in body:
         try:

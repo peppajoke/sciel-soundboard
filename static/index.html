@@ -225,6 +225,12 @@
       <div id="inputsAdv" style="display:none"></div>
       <label>Match threshold <span id="thVal" class="pill"></span></label>
       <input id="threshold" type="range" min="0.5" max="1" step="0.01" style="width:100%">
+      <label>Soundbite delay — beat before any bite plays</label>
+      <div class="row">
+        <input id="playDelay" type="text" style="width:70px" inputmode="numeric">
+        <span style="color:var(--dim)">ms (clips can override)</span>
+      </div>
+
       <label>Budget — most auto-fires allowed per window</label>
       <div class="row">
         <input id="budgetCount" type="text" style="width:70px" inputmode="numeric">
@@ -303,6 +309,8 @@
   </div>
   <label>Threshold override — blank uses the global setting. Raise it for short triggers.</label>
   <input id="edThreshold" type="text" placeholder="e.g. 0.9">
+  <label>Delay override (ms) — blank uses the global delay. 0 plays instantly.</label>
+  <input id="edDelay" type="text" placeholder="e.g. 0 or 800">
   <div class="row" style="margin-top:16px">
     <button id="edSave" style="flex:1">Save</button>
     <button id="edPreview">Preview trim</button>
@@ -686,6 +694,7 @@ function openEditor(c) {
   $('#edTriggers').value = c.triggers.join('\n');
   $('#edTags').value = c.tags.join(', ');
   $('#edThreshold').value = c.threshold ?? '';
+  $('#edDelay').value = c.delay_ms ?? '';
   $('#edRandom').checked = !!c.random_ok;
   $('#edFinished').checked = !!c.finished;
   $('#edSource').value = c.source || '';
@@ -711,6 +720,7 @@ async function saveClip() {
       triggers: $('#edTriggers').value.split('\n'),
       tags: $('#edTags').value.split(','),
       threshold: $('#edThreshold').value.trim() || null,
+      delay_ms: $('#edDelay').value.trim() || null,
       random_ok: $('#edRandom').checked,
       gain: dbToGain(parseFloat($('#edGain').value)),
       finished: $('#edFinished').checked,
@@ -1036,6 +1046,7 @@ async function loadCfg() {
   $('#randomOn').checked = !!cfg.random.enabled;
   $('#randMin').value = cfg.random.min_minutes;
   $('#randMax').value = cfg.random.max_minutes;
+  $('#playDelay').value = cfg.play_delay_ms ?? 300;
   $('#budgetCount').value = cfg.listen.budget_count;
   $('#budgetWindow').value = Math.round(cfg.listen.budget_window_s / 60);
   // Inputs: real capture devices, plus every output offered as a loopback
@@ -1118,6 +1129,7 @@ let cfgReady = false;
 
 function readPanel() {
   return {
+    play_delay_ms: Math.max(0, parseInt($('#playDelay').value, 10) || 0),
     outputs: [...document.querySelectorAll('#outputs input:checked')]
       .map(i => i.dataset.name),
     listen: {
@@ -1178,7 +1190,7 @@ $('#threshold').oninput = e => {
   $('#thVal').textContent = e.target.value;
   saveSettings();
 };
-for (const id of ['budgetCount','budgetWindow','randMin','randMax']) {
+for (const id of ['playDelay','budgetCount','budgetWindow','randMin','randMax']) {
   $('#' + id).oninput = saveSettings;
 }
 

@@ -280,6 +280,14 @@ or ended on a jump big enough to be audible, the worst at 0.18 of full scale.
 Cutting a playing clip has the same problem, so `replace()` releases the
 outgoing voice with a ramp rather than discarding it mid-waveform.
 
+## Soundbite delay
+
+Every bite waits `play_delay_ms` (default 300 ms, Settings -> "Soundbite
+delay") between the fire decision and the sound -- a beat of comedy timing,
+applied to auto-fires and pad presses alike. Any clip can override it in the
+clip editor: blank uses the global value, 0 plays instantly, anything up to
+5000 ms delays just that clip. Stop cancels bites still inside their delay.
+
 ## One sound at a time
 
 A new clip always cuts whatever is still playing. Two soundbites at once is

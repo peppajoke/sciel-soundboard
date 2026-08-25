@@ -65,6 +65,9 @@ class Engine:
         # the words linger for stream_gap_s (10 s). Reset when the stream
         # expires, i.e. when the utterance ends.
         self._fired_this_stream: dict[str, set[str]] = {}
+        # Delayed plays waiting on their timer, so Stop can cancel a bite
+        # that has been decided but not yet heard.
+        self._pending_plays: set = set()
         self._lock = threading.Lock()
 
         # Ring buffer of everything that happened, newest last. The UI polls
@@ -116,15 +119,30 @@ class Engine:
         if not clip.path.exists():
             raise FileNotFoundError(clip.path)
 
-        self.player.play(clip.path, gain=clip.gain,
-                         start=clip.start, end=clip.end)
+        # The beat before the bite: per-clip override if set, else the global
+        # default. The HTTP response and the fire decision stay instant -- the
+        # timer only defers the audio.
+        delay = clip.delay_ms if clip.delay_ms is not None             else float(self.cfg.get("play_delay_ms", 300))
+        delay = max(0.0, float(delay)) / 1000.0
+
+        if delay > 0:
+            timer = threading.Timer(
+                delay, self._play_now, args=(clip,))
+            timer.daemon = True
+            self._pending_plays.add(timer)
+            timer.start()
+        else:
+            self._play_now(clip)
+
         with self._lock:
             now = time.time()
             self._last_fire_at = now
             self._clip_last_fired[clip_id] = now
             # Trimmed length, not file length: gating the listener for the full
             # file after a 2 s trim of a 30 s upload would deafen auto mode.
-            self._last_play_ended = now + clip.play_duration
+            # The delay is included so the self-hear gate covers the whole
+            # window in which the clip will actually sound.
+            self._last_play_ended = now + delay + clip.play_duration
         # In memory only. library.save() writes the whole index, and doing
         # that on every press cost a disk write inside the press path.
         clip.plays += 1
@@ -134,7 +152,25 @@ class Engine:
         self._event("play", clip.name, clip_id=clip_id, why=why)
         return clip
 
+    def _play_now(self, clip):
+        try:
+            self.player.play(clip.path, gain=clip.gain,
+                             start=clip.start, end=clip.end)
+        except Exception:
+            log.exception("delayed play failed for %s", clip.id)
+        finally:
+            # Timers remove themselves; done here so a raced Stop cannot leak.
+            self._pending_plays.discard(threading.current_thread())
+
     def stop(self):
+        # Cancel bites that were decided but have not sounded yet -- Stop
+        # means silence NOW, including the next 300ms.
+        for timer in list(self._pending_plays):
+            try:
+                timer.cancel()
+            except Exception:
+                pass
+        self._pending_plays.clear()
         self.player.stop_all()
         with self._lock:
             self._last_play_ended = time.time()

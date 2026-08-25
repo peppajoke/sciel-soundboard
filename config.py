@@ -16,6 +16,11 @@ DEFAULTS = {
     # one entry covers both. Add your headphones here to monitor yourself.
     "outputs": ["Voicemeeter Input (VB-Audio Voicemeeter VAIO)"],
     "master_gain": 1.0,
+    # Pause between deciding to play a soundbite and the sound starting, in
+    # milliseconds. Applies to every play -- auto-fires and pad presses alike
+    # ("all soundbites") -- unless a clip overrides it. The beat before the
+    # bite lands is comedic timing, not lag.
+    "play_delay_ms": 300,
 
     "listen": {
         # Capture list, mirroring `outputs`: every entry gets its own stream and

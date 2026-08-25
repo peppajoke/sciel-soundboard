@@ -3,6 +3,7 @@
     "Speakers (Realtek(R) Audio)"
   ],
   "master_gain": 1.0,
+  "play_delay_ms": 300,
   "listen": {
     "inputs": [
       {
@@ -29,7 +30,7 @@
     "budget_count": 10,
     "budget_window_s": 300
   },
-  "auto_enabled": true,
+  "auto_enabled": false,
   "random": {
     "enabled": false,
     "min_minutes": 4.0,
