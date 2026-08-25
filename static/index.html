@@ -783,7 +783,13 @@ function paintAuto(s) {
   $('#autoBtn').classList.toggle('on', s.auto_enabled);
   const b = s.budget || {};
   const bEl = $('#budget');
-  if (b.limit > 0) {
+  // With cooldowns disabled the budget is bypassed, so a "used/limit" counter
+  // up here would be describing a restraint that is not in force -- it read
+  // as a cooldown UI while cooldowns were off. Say what is actually true.
+  if (s.cooldowns_off) {
+    bEl.textContent = 'limits off';
+    bEl.className = 'pill ok';
+  } else if (b.limit > 0) {
     bEl.textContent = `${b.used}/${b.limit} per ${Math.round(b.window_s/60)}m`;
     bEl.className = 'pill' + (b.used >= b.limit ? ' bad' : '');
   } else { bEl.textContent = 'no limit'; bEl.className = 'pill'; }
@@ -908,8 +914,10 @@ function paintCooldowns(s) {
   if (g > 0) { gp.style.border = ''; gp.style.background = ''; }
   const list = $('#coolList');
   if (!rows.length) {
-    list.innerHTML = '<div class="quiet">Nothing resting.' +
-      (s.cooldowns_off ? ' Cooldowns capped at 5s.' : '') + '</div>';
+    list.innerHTML = '<div class="quiet">' +
+      (s.cooldowns_off
+        ? 'Cooldowns disabled — a clip rests at most 5s after playing.'
+        : 'Nothing resting.') + '</div>';
     return;
   }
   list.innerHTML = rows.map(r => {

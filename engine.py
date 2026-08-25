@@ -22,12 +22,13 @@ from player import Player
 
 log = logging.getLogger("soundboard.engine")
 
-# How long after a clip finishes the loopback listener stays gated. Without
-# this the soundboard hears itself: a clip plays out of the speakers, the
-# loopback capture transcribes it, and it matches its own trigger. The clip
-# duration is not enough on its own because whisper works on a trailing
-# window, so the tail of the clip is still inside the next chunk.
-SELF_HEAR_GUARD_S = 2.5
+# How long after a clip finishes every capture stays gated. The capture loop
+# clears its rolling buffer on every gated hop, so nothing of the clip
+# survives in the window -- only the single hop spanning the clip's end can
+# carry residue, which is what this half-second covers. It used to be 2.5s
+# (sized for a window that was NOT cleared), and that tail stacked with
+# constant firing into long deaf patches.
+SELF_HEAR_GUARD_S = 0.5
 
 # The single key under which all captures' words merge. See on_line().
 STREAM_KEY = "mix"

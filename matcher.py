@@ -181,6 +181,24 @@ class Match:
     score: float
 
 
+def _phrase_floor(phrase: str) -> float:
+    """Minimum score for a trigger, scaled by its length.
+
+    A short trigger fuzzy-matches unrelated speech constantly: 'sad cat'
+    (7 chars) scored 0.833 against '...killed em death all of them...' and
+    fired the cat song while Jack was saying nothing of the kind. Short
+    triggers therefore demand near-exact hits; longer phrases keep the loose
+    threshold, because a 5-word phrase does not land at 0.82 by accident.
+    """
+    words = normalize(phrase)
+    chars = len(" ".join(words))
+    if len(words) <= 1 or chars <= 5:
+        return 0.95
+    if len(words) == 2 or chars <= 9:
+        return 0.90
+    return 0.0
+
+
 def find_all(line: str, clips, default_threshold: float = 0.82,
              floor: float = 0.0) -> list[Match]:
     """Every clip whose best trigger clears its threshold, best first.
@@ -199,7 +217,7 @@ def find_all(line: str, clips, default_threshold: float = 0.82,
         best: Match | None = None
         for phrase in getattr(clip, "triggers", ()):
             s = score(line, phrase)
-            if s >= threshold and (best is None or s > best.score):
+            if s >= max(threshold, _phrase_floor(phrase))                     and (best is None or s > best.score):
                 best = Match(clip.id, phrase, s)
         if best:
             out.append(best)
@@ -226,6 +244,6 @@ def find(line: str, clips, default_threshold: float = 0.82,
                         floor)
         for phrase in getattr(clip, "triggers", ()):
             s = score(line, phrase)
-            if s >= threshold and (best is None or s > best.score):
+            if s >= max(threshold, _phrase_floor(phrase))                     and (best is None or s > best.score):
                 best = Match(clip.id, phrase, s)
     return best
